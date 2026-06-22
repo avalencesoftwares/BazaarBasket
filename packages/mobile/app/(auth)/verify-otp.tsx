@@ -1,0 +1,362 @@
+// packages/mobile/app/(auth)/verify-otp.tsx
+// OTP verification screen — Premium Light Theme
+
+import { useState, useRef, useCallback, useEffect } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  ActivityIndicator,
+  Alert,
+  Animated,
+  StatusBar,
+} from 'react-native';
+import { router, useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { useAuthStore } from '../../store/authStore';
+import { logger } from '../../utils/logger';
+import { LinearGradient } from 'expo-linear-gradient';
+
+const OTP_LENGTH = 6;
+
+export default function VerifyOTPScreen() {
+  const { phone } = useLocalSearchParams<{ phone: string }>();
+  const [otp, setOtp] = useState<string[]>(Array(OTP_LENGTH).fill(''));
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [resendTimer, setResendTimer] = useState(30);
+  const inputRefs = useRef<(TextInput | null)[]>([]);
+  const setDevUser = useAuthStore((s) => s.setDevUser);
+
+  // Animations
+  const headerOpacity = useRef(new Animated.Value(0)).current;
+  const headerTranslateY = useRef(new Animated.Value(-20)).current;
+  const otpOpacity = useRef(new Animated.Value(0)).current;
+  const inputAnimations = useRef(
+    Array(OTP_LENGTH).fill(0).map(() => new Animated.Value(0))
+  ).current;
+
+  useEffect(() => {
+    // Timer countdown
+    const interval = setInterval(() => {
+      setResendTimer((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    // Entrance animations
+    Animated.sequence([
+      Animated.parallel([
+        Animated.timing(headerOpacity, {
+          toValue: 1,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+        Animated.timing(headerTranslateY, {
+          toValue: 0,
+          duration: 400,
+          useNativeDriver: true,
+        }),
+      ]),
+      Animated.timing(otpOpacity, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.stagger(80, inputAnimations.map((anim) =>
+        Animated.spring(anim, {
+          toValue: 1,
+          tension: 100,
+          friction: 8,
+          useNativeDriver: true,
+        })
+      )),
+    ]).start();
+  }, []);
+
+  const handleVerify = useCallback(
+    async (otpCode: string) => {
+      setIsVerifying(true);
+      try {
+        // Dev bypass: OTP "1234" works in development mode
+        if (__DEV__ && otpCode.startsWith('1234')) {
+          logger.info('Dev OTP bypass activated', { phone });
+          setDevUser(phone);
+          router.replace('/(tabs)');
+          return;
+        }
+
+        // In production, this would call verifyOTP from authService
+        logger.info('Verifying OTP', { phone, otpLength: String(otpCode.length) });
+        // Navigate to main app on success
+        router.replace('/(tabs)');
+      } catch (error) {
+        logger.error('OTP verification failed', error);
+        Alert.alert('Verification Failed', 'Invalid OTP. Please try again.');
+        setOtp(Array(OTP_LENGTH).fill(''));
+        inputRefs.current[0]?.focus();
+      } finally {
+        setIsVerifying(false);
+      }
+    },
+    [phone, setDevUser],
+  );
+
+  const handleOtpChange = useCallback(
+    (text: string, index: number) => {
+      const newOtp = [...otp];
+      newOtp[index] = text;
+      setOtp(newOtp);
+
+      // Auto-advance to next input
+      if (text && index < OTP_LENGTH - 1) {
+        inputRefs.current[index + 1]?.focus();
+      }
+
+      // Auto-verify when all digits are entered
+      if (newOtp.every((digit) => digit !== '') && newOtp.join('').length === OTP_LENGTH) {
+        handleVerify(newOtp.join(''));
+      }
+    },
+    [otp, handleVerify],
+  );
+
+  const handleKeyPress = useCallback(
+    (key: string, index: number) => {
+      if (key === 'Backspace' && !otp[index] && index > 0) {
+        inputRefs.current[index - 1]?.focus();
+        const newOtp = [...otp];
+        newOtp[index - 1] = '';
+        setOtp(newOtp);
+      }
+    },
+    [otp],
+  );
+
+  const handleResend = useCallback(() => {
+    if (resendTimer > 0) {
+      return;
+    }
+    setResendTimer(30);
+    // Resend OTP logic
+    logger.info('Resending OTP', { phone });
+    Alert.alert('OTP Sent', `A new OTP has been sent to ${phone}`);
+  }, [resendTimer, phone]);
+
+  return (
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+
+      {/* Decorative gradient */}
+      <LinearGradient
+        colors={['#EBF9F9', '#D1F5F5', '#FFFFFF']}
+        style={styles.topGradient}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+      />
+
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() => router.back()}
+        accessibilityLabel="Go back"
+        accessibilityRole="button"
+        activeOpacity={0.7}
+      >
+        <Ionicons name="arrow-back" size={22} color="#1E293B" />
+      </TouchableOpacity>
+
+      <Animated.View
+        style={[
+          styles.header,
+          {
+            opacity: headerOpacity,
+            transform: [{ translateY: headerTranslateY }],
+          },
+        ]}
+      >
+        <View style={styles.iconContainer}>
+          <LinearGradient
+            colors={['#00B7B5', '#00A19F']}
+            style={styles.iconGradient}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          >
+            <Ionicons name="shield-checkmark" size={32} color="#000000" />
+          </LinearGradient>
+        </View>
+        <Text style={styles.title}>Verify OTP</Text>
+        <Text style={styles.subtitle}>
+          Enter the 6-digit code sent to{'\n'}
+          <Text style={styles.phoneHighlight}>{phone}</Text>
+        </Text>
+      </Animated.View>
+
+      <Animated.View style={[styles.otpContainer, { opacity: otpOpacity }]}>
+        {Array.from({ length: OTP_LENGTH }).map((_, index) => (
+          <Animated.View
+            key={index}
+            style={{
+              transform: [
+                {
+                  scale: inputAnimations[index].interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.5, 1],
+                  }),
+                },
+              ],
+            }}
+          >
+            <TextInput
+              ref={(ref) => { inputRefs.current[index] = ref; }}
+              style={[
+                styles.otpInput,
+                otp[index] ? styles.otpInputFilled : null,
+              ]}
+              keyboardType="number-pad"
+              maxLength={1}
+              value={otp[index]}
+              onChangeText={(text) => handleOtpChange(text, index)}
+              onKeyPress={({ nativeEvent }) => handleKeyPress(nativeEvent.key, index)}
+              accessibilityLabel={`OTP digit ${index + 1}`}
+            />
+          </Animated.View>
+        ))}
+      </Animated.View>
+
+      {isVerifying && (
+        <ActivityIndicator size="large" color="#00B7B5" style={styles.loader} />
+      )}
+
+      <TouchableOpacity
+        style={styles.resendButton}
+        onPress={handleResend}
+        disabled={resendTimer > 0}
+        accessibilityLabel="Resend OTP"
+        accessibilityRole="button"
+      >
+        <Text
+          style={[
+            styles.resendText,
+            resendTimer > 0 && styles.resendTextDisabled,
+          ]}
+        >
+          {resendTimer > 0
+            ? `Resend OTP in ${resendTimer}s`
+            : 'Resend OTP'}
+        </Text>
+      </TouchableOpacity>
+    </KeyboardAvoidingView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 24,
+    paddingTop: 60,
+  },
+  topGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 200,
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: '#F1F5F9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 32,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  iconContainer: {
+    marginBottom: 16,
+    shadowColor: '#00B7B5',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  iconGradient: {
+    width: 64,
+    height: 64,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#000000',
+    marginBottom: 8,
+    letterSpacing: -0.3,
+  },
+  subtitle: {
+    fontSize: 15,
+    color: '#64748B',
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  phoneHighlight: {
+    color: '#00A19F',
+    fontWeight: '600',
+  },
+  otpContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 10,
+    marginBottom: 32,
+  },
+  otpInput: {
+    width: 48,
+    height: 58,
+    borderRadius: 14,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    textAlign: 'center',
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#000000',
+  },
+  otpInputFilled: {
+    borderColor: '#00B7B5',
+    backgroundColor: '#EBF9F9',
+    shadowColor: '#00B7B5',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  loader: {
+    marginBottom: 24,
+  },
+  resendButton: {
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  resendText: {
+    fontSize: 15,
+    color: '#00A19F',
+    fontWeight: '600',
+  },
+  resendTextDisabled: {
+    color: '#94A3B8',
+  },
+});

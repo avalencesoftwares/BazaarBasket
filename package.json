@@ -1,0 +1,50 @@
+{
+  "name": "bazaarbasket",
+  "version": "1.0.0",
+  "private": true,
+  "description": "BazaarBasket — Kirana Store Platform Monorepo",
+  "scripts": {
+    "dev": "pnpm --filter @bazaarbasket/admin dev",
+    "mobile": "pnpm --filter @bazaarbasket/mobile start",
+    "lint": "pnpm -r run lint",
+    "lint:fix": "pnpm -r run lint:fix",
+    "test": "pnpm -r run test",
+    "test:coverage": "pnpm -r run test:coverage",
+    "build": "pnpm -r run build",
+    "typecheck": "pnpm -r run typecheck",
+    "clean": "pnpm -r run clean",
+    "format": "prettier --write \"packages/*/src/**/*.{ts,tsx,js,jsx,json,css}\"",
+    "format:check": "prettier --check \"packages/*/src/**/*.{ts,tsx,js,jsx,json,css}\"",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "cross-env": "^10.1.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.2.10",
+    "prettier": "^3.4.2",
+    "typescript": "^5.6.3"
+  },
+  "lint-staged": {
+    "packages/shared/src/**/*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "packages/functions/src/**/*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "packages/mobile/**/*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "packages/admin/src/**/*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ]
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@9.15.4"
+}

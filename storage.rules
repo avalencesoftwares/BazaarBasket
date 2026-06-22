@@ -1,0 +1,50 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Helper: Check if the file is an allowed image type
+    function isImage() {
+      return request.resource.contentType.matches('image/jpeg')
+        || request.resource.contentType.matches('image/png')
+        || request.resource.contentType.matches('image/webp');
+    }
+
+    // Helper: Check if file is under 5MB
+    function isUnderSizeLimit() {
+      return request.resource.size < 5 * 1024 * 1024;
+    }
+
+    // Helper: Check if user is admin
+    function isAdmin() {
+      return request.auth != null && request.auth.token.role == 'admin';
+    }
+
+    // Helper: Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Product images — admin upload only
+    match /products/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin() && isImage() && isUnderSizeLimit();
+    }
+
+    // Category images — admin upload only
+    match /categories/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin() && isImage() && isUnderSizeLimit();
+    }
+
+    // User avatars — own user only
+    match /users/{userId}/{allPaths=**} {
+      allow read: if isAuthenticated();
+      allow write: if request.auth.uid == userId && isImage() && isUnderSizeLimit();
+    }
+
+    // Deny everything else
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

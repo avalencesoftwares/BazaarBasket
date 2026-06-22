@@ -1,0 +1,103 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 220 12% 96%; /* #F4F5F7 */
+    --foreground: 210 29% 29%; /* #34495E */
+    --card: 0 0% 100%;
+    --card-foreground: 210 29% 29%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 29% 29%;
+    --primary: 44 63% 67%; /* #E0C375 */
+    --primary-foreground: 210 29% 29%; /* #34495E */
+    --secondary: 220 12% 90%;
+    --secondary-foreground: 210 29% 29%;
+    --muted: 220 12% 90%;
+    --muted-foreground: 210 15% 50%;
+    --accent: 220 12% 90%;
+    --accent-foreground: 210 29% 29%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 210 20% 90%;
+    --input: 210 20% 90%;
+    --ring: 44 63% 67%;
+    --radius: 0.75rem;
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 210 15% 50%;
+    --sidebar-primary: 44 63% 67%;
+    --sidebar-primary-foreground: 210 29% 29%;
+    --sidebar-accent: 220 12% 94%;
+    --sidebar-accent-foreground: 210 29% 29%;
+    --sidebar-border: 210 20% 90%;
+    --sidebar-ring: 44 63% 67%;
+
+    --chart-1: 44 63% 67%;
+    --chart-2: 43 49% 56%;
+    --chart-3: 217 91% 60%;
+    --chart-4: 43 96% 56%;
+    --chart-5: 27 96% 61%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Outfit', sans-serif;
+  }
+}
+
+/* Glassmorphism panel styling — light mode */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.03);
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+/* Premium gradient animations */
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animated-gradient-text {
+  background: linear-gradient(-45deg, #E0C375, #C6A75A, #34495E, #E0C375);
+  background-size: 300% 300%;
+  animation: gradient-shift 8s ease infinite;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
