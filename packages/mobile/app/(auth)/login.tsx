@@ -53,7 +53,7 @@ export default function LoginScreen() {
         }),
       ]),
     ]).start();
-  }, []);
+  }, [logoScale, formOpacity, formTranslateY]);
 
   const handlePhoneLogin = useCallback(async () => {
     const cleaned = phoneNumber.replace(/\s/g, '');

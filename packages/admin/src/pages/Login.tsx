@@ -33,6 +33,7 @@ export const Login: React.FC = () => {
       navigate(from, { replace: true });
     } catch (err: any) {
       // Errors are also stored in the Zustand store
+      // eslint-disable-next-line no-console
       console.error('Login failed:', err);
     }
   };

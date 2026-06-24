@@ -91,6 +91,7 @@ export const Inventory: React.FC = () => {
       // Invalidate queries to refresh lists
       queryClient.invalidateQueries({ queryKey: ['products-inventory'] });
     } catch (err: any) {
+      // eslint-disable-next-line no-console
       console.error(err);
       alert(err?.message || 'Failed to update stock');
     } finally {

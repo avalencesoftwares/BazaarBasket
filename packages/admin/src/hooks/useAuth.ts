@@ -41,6 +41,7 @@ export function useAuth() {
             store.setError('Access denied: User is not an admin.');
           }
         } catch (err) {
+          // eslint-disable-next-line no-console
           console.error('Error verifying admin status:', err);
           store.setUser(null);
           store.setAdmin(false);
@@ -75,7 +76,9 @@ export function useAuth() {
       const now = Date.now();
       const activity = useAuthStore.getState().lastActivity;
       if (now - activity > INACTIVITY_TIMEOUT) {
+        // eslint-disable-next-line no-console
         console.warn('Session timed out due to inactivity.');
+        // eslint-disable-next-line no-console
         useAuthStore.getState().logout().catch(console.error);
         alert('Your session has expired due to inactivity. Please log in again.');
       }

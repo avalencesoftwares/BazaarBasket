@@ -243,6 +243,7 @@ export const Products: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['products'] });
       setIsOverlayOpen(false);
     } catch (err: any) {
+      // eslint-disable-next-line no-console
       console.error(err);
       setFormError(err?.message || 'Failed to save product');
     } finally {

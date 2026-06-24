@@ -94,6 +94,7 @@ export const Sidebar: React.FC = () => {
         <button
           onClick={() => {
             if (confirm('Are you sure you want to sign out?')) {
+              // eslint-disable-next-line no-console
               logout().catch(console.error);
             }
           }}
