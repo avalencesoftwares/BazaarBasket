@@ -144,6 +144,7 @@ export const Categories: React.FC = () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       setIsModalOpen(false);
     } catch (err: any) {
+      // eslint-disable-next-line no-console
       console.error(err);
       setErrorMsg(err?.message || 'Failed to save category');
     } finally {

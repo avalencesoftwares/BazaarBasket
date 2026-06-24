@@ -116,6 +116,7 @@ export default function SlotPickerScreen() {
                 accessibilityLabel={`Select ${slot.label} slot`}
                 activeOpacity={0.7}
               >
+                {/* eslint-disable-next-line react-native/no-inline-styles */}
                 <View style={[styles.slotIconBg, { backgroundColor: isSelected ? `${getSlotColor(slot.id)}15` : '#F8FAFC' }]}>
                   <Ionicons name={getSlotIcon(slot.id)} size={22} color={iconColor} />
                 </View>

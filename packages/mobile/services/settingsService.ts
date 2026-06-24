@@ -5,6 +5,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from './firebase';
 import { COLLECTIONS } from '@bazaarbasket/shared';
 import type { StoreSettings } from '@bazaarbasket/shared';
+import { logger } from '../utils/logger';
 
 const STORE_CONFIG_DOC = 'storeConfig';
 
@@ -21,7 +22,7 @@ export async function getStoreSettings(): Promise<StoreSettings | null> {
     }
     return null;
   } catch (error) {
-    console.error('Error fetching store settings:', error);
+    logger.error('Error fetching store settings:', error);
     return null;
   }
 }

@@ -131,6 +131,7 @@ export const Orders: React.FC = () => {
       });
 
     } catch (err: any) {
+      // eslint-disable-next-line no-console
       console.error(err);
       setUpdateError(err?.message || 'Failed to update order status');
     } finally {

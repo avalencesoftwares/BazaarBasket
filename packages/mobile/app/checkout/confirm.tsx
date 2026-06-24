@@ -116,7 +116,7 @@ export default function ConfirmOrderScreen() {
         {/* Delivery Address */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <View style={[styles.sectionIconBg, { backgroundColor: '#EBF9F9' }]}>
+            <View style={[styles.sectionIconBg, styles.sectionIconBgTeal]}>
               <Ionicons name="location" size={16} color="#00B7B5" />
             </View>
             <Text style={styles.sectionTitle}>Delivery Address</Text>
@@ -136,7 +136,7 @@ export default function ConfirmOrderScreen() {
         {/* Delivery Slot */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <View style={[styles.sectionIconBg, { backgroundColor: '#EFF6FF' }]}>
+            <View style={[styles.sectionIconBg, styles.sectionIconBgBlue]}>
               <Ionicons name="time" size={16} color="#3B82F6" />
             </View>
             <Text style={styles.sectionTitle}>Delivery Slot</Text>
@@ -149,7 +149,7 @@ export default function ConfirmOrderScreen() {
         {/* Payment Method */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <View style={[styles.sectionIconBg, { backgroundColor: '#EBF9F9' }]}>
+            <View style={[styles.sectionIconBg, styles.sectionIconBgTeal]}>
               <Ionicons name="cash" size={16} color="#F59E0B" />
             </View>
             <Text style={styles.sectionTitle}>Payment Method</Text>
@@ -168,7 +168,7 @@ export default function ConfirmOrderScreen() {
         {/* Order Items */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <View style={[styles.sectionIconBg, { backgroundColor: '#F5F3FF' }]}>
+            <View style={[styles.sectionIconBg, styles.sectionIconBgPurple]}>
               <Ionicons name="basket" size={16} color="#8B5CF6" />
             </View>
             <Text style={styles.sectionTitle}>Items ({items.length})</Text>
@@ -267,6 +267,15 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  sectionIconBgTeal: {
+    backgroundColor: '#EBF9F9',
+  },
+  sectionIconBgBlue: {
+    backgroundColor: '#EFF6FF',
+  },
+  sectionIconBgPurple: {
+    backgroundColor: '#F5F3FF',
   },
   sectionTitle: { fontSize: 16, fontWeight: '700', color: '#000000' },
   card: {

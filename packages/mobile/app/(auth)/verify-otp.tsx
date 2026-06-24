@@ -76,7 +76,7 @@ export default function VerifyOTPScreen() {
         })
       )),
     ]).start();
-  }, []);
+  }, [headerOpacity, headerTranslateY, otpOpacity, inputAnimations]);
 
   const handleVerify = useCallback(
     async (otpCode: string) => {
