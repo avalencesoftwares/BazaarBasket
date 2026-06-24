@@ -1,11 +1,7 @@
-// packages/mobile/app/(tabs)/index.tsx
-// Home screen — Redesigned to match food delivery app screenshot
-
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import {
   View,
   Text,
-  FlatList,
   TouchableOpacity,
   StyleSheet,
   RefreshControl,
@@ -25,10 +21,120 @@ import { formatCurrency } from '@bazaarbasket/shared';
 import type { Product, Category } from '@bazaarbasket/shared';
 import { useCartStore } from '../../store/cartStore';
 import { LinearGradient } from 'expo-linear-gradient';
+import Svg, { Path } from 'react-native-svg';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const PRODUCT_CARD_WIDTH = (SCREEN_WIDTH - 48 - 16) / 2;
 const CATEGORY_CIRCLE_SIZE = 70;
+
+// Helper to chunk array
+const chunkArray = <T,>(arr: T[], size: number): T[][] => {
+  const result: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) {
+    result.push(arr.slice(i, i + size));
+  }
+  return result;
+};
+
+// ─── Mock Categories for Redesign Carousel ───────────────────────────────────
+const MOCK_CATEGORIES: Category[] = [
+  {
+    id: 'sweets',
+    name: 'Sweets',
+    slug: 'sweets',
+    imageUrl: 'https://images.unsplash.com/photo-1587314168485-3236d6710814?q=80&w=250&auto=format&fit=crop',
+    imagePublicId: '',
+    productCount: 0,
+    isActive: true,
+    sortOrder: 1,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: 'health',
+    name: 'Health',
+    slug: 'health',
+    imageUrl: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?q=80&w=250&auto=format&fit=crop',
+    imagePublicId: '',
+    productCount: 0,
+    isActive: true,
+    sortOrder: 2,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: 'drink',
+    name: 'Drink',
+    slug: 'drink',
+    imageUrl: 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?q=80&w=250&auto=format&fit=crop',
+    imagePublicId: '',
+    productCount: 0,
+    isActive: true,
+    sortOrder: 3,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: 'frozen',
+    name: 'Frozen',
+    slug: 'frozen',
+    imageUrl: 'https://images.unsplash.com/photo-1549590143-d5855148a9d5?q=80&w=250&auto=format&fit=crop',
+    imagePublicId: '',
+    productCount: 0,
+    isActive: true,
+    sortOrder: 4,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: 'bakery',
+    name: 'Bakery',
+    slug: 'bakery',
+    imageUrl: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?q=80&w=250&auto=format&fit=crop',
+    imagePublicId: '',
+    productCount: 0,
+    isActive: true,
+    sortOrder: 5,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: 'veggies',
+    name: 'Veggies',
+    slug: 'veggies',
+    imageUrl: 'https://images.unsplash.com/photo-1566385101042-1a0aa0c1268c?q=80&w=250&auto=format&fit=crop',
+    imagePublicId: '',
+    productCount: 0,
+    isActive: true,
+    sortOrder: 6,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: 'fruits',
+    name: 'Fruits',
+    slug: 'fruits',
+    imageUrl: 'https://images.unsplash.com/photo-1619546813926-a78fa6372cd2?q=80&w=250&auto=format&fit=crop',
+    imagePublicId: '',
+    productCount: 0,
+    isActive: true,
+    sortOrder: 7,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+  {
+    id: 'dairy',
+    name: 'Dairy',
+    slug: 'dairy',
+    imageUrl: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?q=80&w=250&auto=format&fit=crop',
+    imagePublicId: '',
+    productCount: 0,
+    isActive: true,
+    sortOrder: 8,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
+];
 
 // ─── Color Palette (matching screenshot green theme) ──────────────────────────
 const COLORS = {
@@ -38,6 +144,7 @@ const COLORS = {
   accentGreen: '#66BB6A',
   white: '#FFFFFF',
   offWhite: '#F5F6FA',
+  mintBg: '#F1F8F3', // Light mint green background matching screenshot
   cardBg: '#FFFFFF',
   textPrimary: '#1A1A2E',
   textSecondary: '#6B7280',
@@ -183,6 +290,8 @@ function ProductCard({ product }: { product: Product }) {
 // ─── Home Screen ──────────────────────────────────────────────────────────────
 export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0);
+  const scrollViewRef = useRef<ScrollView>(null);
   const totalItems = useCartStore((s) => s.totalItems);
 
   const categoriesQuery = useQuery({
@@ -213,11 +322,39 @@ export default function HomeScreen() {
     setRefreshing(false);
   }, [categoriesQuery, productsQuery, settingsQuery]);
 
-  const storeAddress = settingsQuery.data?.storeAddress || 'Your City';
+  const categoriesToRender = categoriesQuery.data && categoriesQuery.data.length > 0
+    ? categoriesQuery.data
+    : MOCK_CATEGORIES;
+
+  useEffect(() => {
+    const totalPages = Math.ceil(categoriesToRender.length / 4);
+    if (totalPages <= 1) return;
+
+    const interval = setInterval(() => {
+      const nextPage = (currentPage + 1) % totalPages;
+      scrollViewRef.current?.scrollTo({
+        x: nextPage * SCREEN_WIDTH,
+        animated: true,
+      });
+      setCurrentPage(nextPage);
+    }, 4000);
+
+    return () => clearInterval(interval);
+  }, [currentPage, categoriesToRender.length]);
+
+  const handleScroll = (event: any) => {
+    const contentOffset = event.nativeEvent.contentOffset.x;
+    const pageIndex = Math.round(contentOffset / SCREEN_WIDTH);
+    if (pageIndex !== currentPage) {
+      setCurrentPage(pageIndex);
+    }
+  };
+
+  const storeAddress = settingsQuery.data?.storeAddress || 'New York, USA';
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor={COLORS.offWhite} />
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.primaryGreen} />
 
       <ScrollView
         style={styles.scrollView}
@@ -231,67 +368,92 @@ export default function HomeScreen() {
           />
         }
       >
-        {/* ─── Search Header ─────────────────────────────────────────── */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.searchBar}
-            onPress={() => router.push('/(tabs)/search')}
-            activeOpacity={0.7}
-            accessibilityLabel="Search for food"
-            accessibilityRole="search"
-          >
-            <Ionicons name="search" size={20} color={COLORS.textMuted} />
-            <Text style={styles.searchPlaceholder}>Search for food...</Text>
-          </TouchableOpacity>
+        {/* ─── Curved Green Header ───────────────────────────────────── */}
+        <View style={styles.curvedHeader}>
+          {/* Search Header Row */}
+          <View style={styles.headerRow}>
+            <TouchableOpacity
+              style={styles.searchBar}
+              onPress={() => router.push('/(tabs)/search')}
+              activeOpacity={0.7}
+              accessibilityLabel="Search for food"
+              accessibilityRole="search"
+            >
+              <Ionicons name="search" size={20} color={COLORS.textMuted} />
+              <Text style={styles.searchPlaceholder}>Search for food...</Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.cartButton}
-            onPress={() => router.push('/(tabs)/cart')}
-            accessibilityLabel="Cart"
-            accessibilityRole="button"
-            activeOpacity={0.7}
-          >
-            <Ionicons name="cart-outline" size={24} color={COLORS.textPrimary} />
-            {totalItems > 0 && (
-              <View style={styles.cartBadge}>
-                <Text style={styles.cartBadgeText}>
-                  {totalItems > 9 ? '9+' : totalItems}
-                </Text>
-              </View>
-            )}
-          </TouchableOpacity>
-        </View>
+            <TouchableOpacity
+              style={styles.cartButton}
+              onPress={() => router.push('/(tabs)/cart')}
+              accessibilityLabel="Cart"
+              accessibilityRole="button"
+              activeOpacity={0.7}
+            >
+              <Ionicons name="cart-outline" size={24} color={COLORS.textPrimary} />
+              {totalItems > 0 && (
+                <View style={styles.cartBadge}>
+                  <Text style={styles.cartBadgeText}>
+                    {totalItems > 9 ? '9+' : totalItems}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          </View>
 
-        {/* ─── Current Location ──────────────────────────────────────── */}
-        <View style={styles.locationContainer}>
-          <Text style={styles.locationLabel}>Current Location</Text>
-          <View style={styles.locationRow}>
-            <Ionicons name="location" size={16} color={COLORS.primaryGreen} />
-            <Text style={styles.locationText}>{storeAddress}</Text>
-            <Ionicons name="chevron-down" size={14} color={COLORS.textSecondary} />
+          {/* Location Section */}
+          <View style={styles.locationContainer}>
+            <Text style={styles.locationLabel}>Current Location</Text>
+            <View style={styles.locationRow}>
+              <Ionicons name="location" size={16} color={COLORS.white} />
+              <Text style={styles.locationText}>{storeAddress}</Text>
+            </View>
           </View>
         </View>
 
-        {/* ─── Categories ────────────────────────────────────────────── */}
+        {/* ─── Categories Carousel (with Auto-cycle) ─────────────────── */}
         <View style={styles.categoriesSection}>
           {categoriesQuery.isLoading ? (
             <ActivityIndicator size="small" color={COLORS.primaryGreen} style={styles.loader} />
           ) : (
-            <FlatList
-              data={categoriesQuery.data || []}
-              keyExtractor={(item) => item.id}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              renderItem={({ item }) => <CategoryItem category={item} />}
-              contentContainerStyle={styles.categoryList}
-            />
+            <>
+              <ScrollView
+                ref={scrollViewRef}
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                onMomentumScrollEnd={handleScroll}
+                contentContainerStyle={styles.categoryScrollContainer}
+              >
+                {chunkArray(categoriesToRender, 4).map((chunk, pageIndex) => (
+                  <View key={`page-${pageIndex}`} style={styles.categoryPage}>
+                    {chunk.map((category) => (
+                      <CategoryItem key={category.id} category={category} />
+                    ))}
+                  </View>
+                ))}
+              </ScrollView>
+
+              {/* Dynamic Page Indicators */}
+              <View style={styles.paginationContainer}>
+                {chunkArray(categoriesToRender, 4).map((_, pageIndex) => (
+                  <View
+                    key={`dot-${pageIndex}`}
+                    style={[
+                      styles.paginationDot,
+                      currentPage === pageIndex && styles.paginationDotActive,
+                    ]}
+                  />
+                ))}
+              </View>
+            </>
           )}
         </View>
 
         {/* ─── Promotional Banner ────────────────────────────────────── */}
         <View style={styles.bannerContainer}>
           <LinearGradient
-            colors={['#4CAF50', '#388E3C']}
+            colors={['#58B25C', '#459D4A']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.banner}
@@ -316,24 +478,45 @@ export default function HomeScreen() {
                   <Text style={styles.bannerButtonText}>Get Now</Text>
                 </TouchableOpacity>
                 <View style={styles.bannerArrow}>
-                  <Ionicons name="arrow-forward" size={16} color={COLORS.white} />
+                  <Ionicons
+                    name="arrow-forward"
+                    size={16}
+                    color="#1A1A2E"
+                    style={{ transform: [{ rotate: '-45deg' }] }}
+                  />
                 </View>
               </View>
             </View>
 
             {/* Right side promotional image area */}
             <View style={styles.bannerRight}>
-              <View style={styles.bannerDiscountBadge}>
-                <Text style={styles.bannerDiscountBadgeLabel}>DISCOUNT</Text>
-                <Text style={styles.bannerDiscountBadgePercent}>40%</Text>
-                <Text style={styles.bannerDiscountBadgeOff}>OFF</Text>
+              {/* Custom SVG Ribbon Tag */}
+              <View style={styles.ribbonContainer}>
+                <Svg width="54" height="70" viewBox="0 0 54 70">
+                  <Path
+                    d="M0 0 H54 V60 L27 50 L0 60 Z"
+                    fill="#FFFFFF"
+                    stroke="#EF4444"
+                    strokeWidth="1.5"
+                  />
+                </Svg>
+                <View style={styles.ribbonTextContainer}>
+                  <Text style={styles.ribbonLabel}>DISCOUNT</Text>
+                  <View style={styles.ribbonDivider} />
+                  <Text style={styles.ribbonPercent}>40%</Text>
+                  <Text style={styles.ribbonOff}>Off</Text>
+                  <View style={styles.ribbonDivider} />
+                  <Text style={styles.ribbonAllProduct}>ALL PRODUCT</Text>
+                </View>
               </View>
-              <View style={styles.bannerImagePlaceholder}>
-                <Ionicons name="gift" size={48} color="rgba(255,255,255,0.4)" />
-              </View>
-              <View style={styles.bannerAllProducts}>
-                <Text style={styles.bannerAllProductsText}>ALL PRODUCT</Text>
-              </View>
+
+              {/* Woman Image Cutout */}
+              <Image
+                source={{ uri: 'https://images.unsplash.com/photo-1595853035070-59a39fe84de3?q=80&w=400' }}
+                style={styles.bannerWomanImage}
+                contentFit="contain"
+                cachePolicy="disk"
+              />
             </View>
           </LinearGradient>
         </View>
@@ -372,22 +555,35 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.offWhite,
+    backgroundColor: COLORS.mintBg,
   },
   scrollView: {
     flex: 1,
   },
 
-  // ── Header / Search ───────────────────────────────────────────────────────
-  header: {
+  // ── Curved Green Header ────────────────────────────────────────────────────
+  curvedHeader: {
+    backgroundColor: COLORS.primaryGreen,
+    paddingTop: Platform.OS === 'ios' ? 58 : 46,
+    paddingBottom: 36, // Extra bottom padding so curved area shows under categories
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+    shadowColor: COLORS.darkGreen,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.22,
+    shadowRadius: 16,
+    elevation: 10,
+    zIndex: 1,
+  },
+  headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'ios' ? 60 : 48,
-    paddingBottom: 12,
+    paddingBottom: 14,
     gap: 12,
-    backgroundColor: COLORS.offWhite,
   },
+
+  // ── Search Bar ────────────────────────────────────────────────────────────
   searchBar: {
     flex: 1,
     flexDirection: 'row',
@@ -397,33 +593,31 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     height: 50,
     gap: 10,
-    borderWidth: 1,
-    borderColor: COLORS.borderLight,
     shadowColor: COLORS.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
     shadowRadius: 8,
-    elevation: 2,
+    elevation: 4,
   },
   searchPlaceholder: {
     fontSize: 15,
     color: COLORS.textMuted,
     flex: 1,
   },
+
+  // ── Cart Button ───────────────────────────────────────────────────────────
   cartButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     backgroundColor: COLORS.white,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: COLORS.borderLight,
     shadowColor: COLORS.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
     shadowRadius: 8,
-    elevation: 2,
+    elevation: 4,
   },
   cartBadge: {
     position: 'absolute',
@@ -445,64 +639,75 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
-  // ── Location ──────────────────────────────────────────────────────────────
+  // ── Location (inside green header) ────────────────────────────────────────
   locationContainer: {
     alignItems: 'center',
-    paddingVertical: 8,
-    paddingBottom: 16,
+    paddingTop: 4,
+    paddingBottom: 4,
   },
   locationLabel: {
-    fontSize: 13,
-    color: COLORS.primaryGreen,
-    fontWeight: '600',
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.80)',
+    fontWeight: '500',
     marginBottom: 4,
     letterSpacing: 0.3,
   },
   locationRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 5,
   },
   locationText: {
-    fontSize: 14,
-    color: COLORS.textPrimary,
-    fontWeight: '600',
+    fontSize: 17,
+    color: COLORS.white,
+    fontWeight: '700',
+    letterSpacing: 0.2,
   },
 
-  // ── Categories ────────────────────────────────────────────────────────────
+  // ── Categories Carousel ────────────────────────────────────────────────────
   categoriesSection: {
-    paddingBottom: 20,
+    marginTop: -20, // Overlap up into the curved bottom of the green header
+    paddingBottom: 8,
+    backgroundColor: 'transparent',
+    zIndex: 2,
   },
-  categoryList: {
-    paddingHorizontal: 16,
-    gap: 16,
+  categoryScrollContainer: {
+    // Total width = number of pages × SCREEN_WIDTH
+  },
+  categoryPage: {
+    width: SCREEN_WIDTH,
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingHorizontal: 20,
+    paddingTop: 14,
+    paddingBottom: 12,
   },
   categoryItem: {
     alignItems: 'center',
-    width: CATEGORY_CIRCLE_SIZE + 16,
+    flex: 1,
   },
   categoryRing: {
-    width: CATEGORY_CIRCLE_SIZE + 8,
-    height: CATEGORY_CIRCLE_SIZE + 8,
-    borderRadius: (CATEGORY_CIRCLE_SIZE + 8) / 2,
+    width: CATEGORY_CIRCLE_SIZE + 10,
+    height: CATEGORY_CIRCLE_SIZE + 10,
+    borderRadius: (CATEGORY_CIRCLE_SIZE + 10) / 2,
     borderWidth: 2.5,
-    borderColor: COLORS.primaryGreen,
+    borderColor: COLORS.white,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 8,
     backgroundColor: COLORS.white,
-    shadowColor: COLORS.primaryGreen,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 3,
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.14,
+    shadowRadius: 8,
+    elevation: 5,
   },
   categoryImageWrapper: {
     width: CATEGORY_CIRCLE_SIZE,
     height: CATEGORY_CIRCLE_SIZE,
     borderRadius: CATEGORY_CIRCLE_SIZE / 2,
     overflow: 'hidden',
-    backgroundColor: COLORS.white,
+    backgroundColor: COLORS.lightGreen,
   },
   categoryImage: {
     width: '100%',
@@ -517,47 +722,79 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: COLORS.textPrimary,
     textAlign: 'center',
-    fontWeight: '500',
+    fontWeight: '600',
+  },
+  // Legacy list style (not used by carousel but kept for reference)
+  categoryList: {
+    paddingHorizontal: 16,
+    gap: 16,
+  },
+
+  // ── Pagination Dots ────────────────────────────────────────────────────────
+  paginationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 6,
+    paddingTop: 4,
+    paddingBottom: 12,
+  },
+  paginationDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#D1D5DB',
+  },
+  paginationDotActive: {
+    width: 22,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.primaryGreen,
   },
 
   // ── Banner ────────────────────────────────────────────────────────────────
   bannerContainer: {
     paddingHorizontal: 20,
     paddingBottom: 24,
+    marginTop: 4,
   },
   banner: {
-    borderRadius: 18,
-    padding: 20,
+    borderRadius: 22,
+    paddingTop: 22,
+    paddingBottom: 0,
+    paddingLeft: 22,
+    paddingRight: 0,
     flexDirection: 'row',
     overflow: 'hidden',
-    minHeight: 160,
+    minHeight: 168,
     shadowColor: COLORS.darkGreen,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 14,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.28,
+    shadowRadius: 16,
+    elevation: 10,
   },
   bannerLeft: {
     flex: 1,
     justifyContent: 'center',
+    paddingBottom: 22,
   },
   bannerLabel: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
-    color: 'rgba(255,255,255,0.9)',
-    marginBottom: 4,
+    color: 'rgba(255,255,255,0.88)',
+    marginBottom: 2,
   },
   bannerDiscount: {
-    fontSize: 32,
-    fontWeight: '800',
+    fontSize: 34,
+    fontWeight: '900',
     color: COLORS.white,
     marginBottom: 2,
     letterSpacing: -0.5,
   },
   bannerDate: {
     fontSize: 13,
-    color: 'rgba(255,255,255,0.8)',
-    marginBottom: 14,
+    color: 'rgba(255,255,255,0.75)',
+    marginBottom: 16,
   },
   bannerButtonRow: {
     flexDirection: 'row',
@@ -566,78 +803,111 @@ const styles = StyleSheet.create({
   },
   bannerButton: {
     backgroundColor: COLORS.white,
-    borderRadius: 20,
-    paddingHorizontal: 18,
-    paddingVertical: 8,
+    borderRadius: 22,
+    paddingHorizontal: 20,
+    paddingVertical: 9,
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   bannerButtonText: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '700',
     color: COLORS.darkGreen,
   },
   bannerArrow: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.25)',
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.4)',
   },
   bannerRight: {
-    width: 120,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 130,
+    alignItems: 'flex-end',
+    justifyContent: 'flex-end',
     position: 'relative',
   },
-  bannerDiscountBadge: {
+
+  // ── Ribbon Tag (SVG-backed) ────────────────────────────────────────────────
+  ribbonContainer: {
     position: 'absolute',
-    top: -4,
-    right: -4,
-    backgroundColor: '#FF5722',
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    top: 0,
+    right: 10,
+    zIndex: 10,
     alignItems: 'center',
-    zIndex: 2,
   },
-  bannerDiscountBadgeLabel: {
-    fontSize: 7,
-    fontWeight: '800',
-    color: '#FFEB3B',
-    letterSpacing: 0.5,
+  ribbonTextContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 58,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 2,
   },
-  bannerDiscountBadgePercent: {
-    fontSize: 16,
+  ribbonLabel: {
+    fontSize: 6.5,
     fontWeight: '900',
-    color: COLORS.white,
-    lineHeight: 18,
+    color: COLORS.red,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
-  bannerDiscountBadgeOff: {
+  ribbonDivider: {
+    width: 36,
+    height: 1,
+    backgroundColor: COLORS.red,
+    marginVertical: 2,
+    opacity: 0.5,
+  },
+  ribbonPercent: {
+    fontSize: 17,
+    fontWeight: '900',
+    color: COLORS.red,
+    lineHeight: 19,
+  },
+  ribbonOff: {
     fontSize: 8,
     fontWeight: '800',
-    color: '#FFEB3B',
+    color: COLORS.red,
+    letterSpacing: 0.3,
   },
+  ribbonAllProduct: {
+    fontSize: 5.5,
+    fontWeight: '900',
+    color: COLORS.red,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+
+  // ── Banner Woman Image ─────────────────────────────────────────────────────
+  bannerWomanImage: {
+    width: 120,
+    height: 160,
+    marginBottom: 0,
+    marginRight: 0,
+  },
+
+  // ── Unused old banner styles (kept so no ref errors) ──────────────────────
+  bannerDiscountBadge: {
+    display: 'none',
+  },
+  bannerDiscountBadgeLabel: {},
+  bannerDiscountBadgePercent: {},
+  bannerDiscountBadgeOff: {},
   bannerImagePlaceholder: {
-    width: 90,
-    height: 80,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    display: 'none',
   },
   bannerAllProducts: {
-    marginTop: 6,
-    backgroundColor: '#FFEB3B',
-    borderRadius: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
+    display: 'none',
   },
-  bannerAllProductsText: {
-    fontSize: 8,
-    fontWeight: '800',
-    color: '#E65100',
-    letterSpacing: 0.5,
-  },
+  bannerAllProductsText: {},
 
   // ── Section Headers ───────────────────────────────────────────────────────
   section: {
@@ -768,3 +1038,4 @@ const styles = StyleSheet.create({
     height: 100,
   },
 });
+
