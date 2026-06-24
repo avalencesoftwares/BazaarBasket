@@ -1,5 +1,5 @@
 // packages/mobile/app/(tabs)/index.tsx
-// Home screen — categories, featured products, banners — Premium Light Theme
+// Home screen — Redesigned to match food delivery app screenshot
 
 import { useState, useCallback } from 'react';
 import {
@@ -13,6 +13,7 @@ import {
   Dimensions,
   ActivityIndicator,
   StatusBar,
+  Platform,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,14 +21,33 @@ import { useQuery } from '@tanstack/react-query';
 import { Image } from 'expo-image';
 import { getCategories, getProducts } from '../../services/productService';
 import { getStoreSettings } from '../../services/settingsService';
-import { formatCurrency, calculateDiscount } from '@bazaarbasket/shared';
+import { formatCurrency } from '@bazaarbasket/shared';
 import type { Product, Category } from '@bazaarbasket/shared';
 import { useCartStore } from '../../store/cartStore';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const PRODUCT_CARD_WIDTH = (SCREEN_WIDTH - 48 - 12) / 2;
+const PRODUCT_CARD_WIDTH = (SCREEN_WIDTH - 48 - 16) / 2;
+const CATEGORY_CIRCLE_SIZE = 70;
 
+// ─── Color Palette (matching screenshot green theme) ──────────────────────────
+const COLORS = {
+  primaryGreen: '#4CAF50',
+  darkGreen: '#388E3C',
+  lightGreen: '#E8F5E9',
+  accentGreen: '#66BB6A',
+  white: '#FFFFFF',
+  offWhite: '#F5F6FA',
+  cardBg: '#FFFFFF',
+  textPrimary: '#1A1A2E',
+  textSecondary: '#6B7280',
+  textMuted: '#9CA3AF',
+  borderLight: '#E8ECF0',
+  red: '#EF4444',
+  shadow: '#000000',
+};
+
+// ─── Category Item ────────────────────────────────────────────────────────────
 function CategoryItem({ category }: { category: Category }) {
   return (
     <TouchableOpacity
@@ -37,35 +57,38 @@ function CategoryItem({ category }: { category: Category }) {
       accessibilityRole="button"
       activeOpacity={0.7}
     >
-      <View style={styles.categoryImageWrapper}>
-        {category.imageUrl ? (
-          <Image
-            source={{ uri: category.imageUrl }}
-            style={styles.categoryImage}
-            contentFit="cover"
-            cachePolicy="disk"
-          />
-        ) : (
-          <View style={[styles.categoryImage, styles.categoryPlaceholder]}>
-            <Ionicons name="grid" size={24} color="#94A3B8" />
-          </View>
-        )}
+      <View style={styles.categoryRing}>
+        <View style={styles.categoryImageWrapper}>
+          {category.imageUrl ? (
+            <Image
+              source={{ uri: category.imageUrl }}
+              style={styles.categoryImage}
+              contentFit="cover"
+              cachePolicy="disk"
+            />
+          ) : (
+            <View style={[styles.categoryImage, styles.categoryPlaceholder]}>
+              <Ionicons name="grid" size={24} color={COLORS.textMuted} />
+            </View>
+          )}
+        </View>
       </View>
-      <Text style={styles.categoryName} numberOfLines={2}>
+      <Text style={styles.categoryName} numberOfLines={1}>
         {category.name}
       </Text>
     </TouchableOpacity>
   );
 }
 
+// ─── Product Card (Recommended Style) ─────────────────────────────────────────
 function ProductCard({ product }: { product: Product }) {
   const addItem = useCartStore((s) => s.addItem);
   const [isAdding, setIsAdding] = useState(false);
-  const discount = calculateDiscount(product.mrp, product.price);
+  const [isWishlisted, setIsWishlisted] = useState(false);
   const isOutOfStock = product.stock <= 0;
 
   const handleAddToCart = useCallback(async () => {
-    if (isOutOfStock) { return; }
+    if (isOutOfStock) return;
     setIsAdding(true);
     try {
       await addItem(product.id, 1);
@@ -76,20 +99,19 @@ function ProductCard({ product }: { product: Product }) {
     }
   }, [product.id, isOutOfStock, addItem]);
 
+  const toggleWishlist = useCallback(() => {
+    setIsWishlisted((prev) => !prev);
+  }, []);
+
   return (
     <TouchableOpacity
       style={[styles.productCard, isOutOfStock && styles.productCardOutOfStock]}
       onPress={() => router.push(`/product/${product.id}`)}
       accessibilityLabel={`${product.name}, ${formatCurrency(product.price)}`}
       accessibilityRole="button"
-      activeOpacity={0.7}
+      activeOpacity={0.8}
     >
-      {discount > 0 && (
-        <View style={styles.discountBadge}>
-          <Text style={styles.discountText}>{discount}% OFF</Text>
-        </View>
-      )}
-
+      {/* Product Image */}
       <View style={styles.productImageContainer}>
         {product.images.length > 0 ? (
           <Image
@@ -100,51 +122,68 @@ function ProductCard({ product }: { product: Product }) {
           />
         ) : (
           <View style={[styles.productImage, styles.productPlaceholder]}>
-            <Ionicons name="image" size={32} color="#CBD5E1" />
+            <Ionicons name="image" size={32} color="#D1D5DB" />
           </View>
         )}
+
+        {/* Heart / Wishlist Icon */}
+        <TouchableOpacity
+          style={styles.heartButton}
+          onPress={toggleWishlist}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityLabel={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
+        >
+          <Ionicons
+            name={isWishlisted ? 'heart' : 'heart-outline'}
+            size={20}
+            color={isWishlisted ? COLORS.red : COLORS.textMuted}
+          />
+        </TouchableOpacity>
       </View>
 
+      {/* Product Info */}
       <View style={styles.productInfo}>
-        <Text style={styles.productName} numberOfLines={2}>
+        <Text style={styles.productName} numberOfLines={1}>
           {product.name}
         </Text>
-        <Text style={styles.productUnit}>{product.unit}</Text>
+        <Text style={styles.productDescription} numberOfLines={1}>
+          {product.description || product.unit}
+        </Text>
 
         <View style={styles.priceRow}>
           <Text style={styles.productPrice}>{formatCurrency(product.price)}</Text>
-          {product.mrp > product.price && (
-            <Text style={styles.productMrp}>{formatCurrency(product.mrp)}</Text>
+
+          {/* Circular Add Button */}
+          {isOutOfStock ? (
+            <View style={styles.addButtonDisabled}>
+              <Ionicons name="remove" size={18} color={COLORS.textMuted} />
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={handleAddToCart}
+              disabled={isAdding}
+              activeOpacity={0.8}
+              accessibilityLabel={`Add ${product.name} to cart`}
+              accessibilityRole="button"
+            >
+              {isAdding ? (
+                <ActivityIndicator size="small" color={COLORS.white} />
+              ) : (
+                <Ionicons name="add" size={20} color={COLORS.white} />
+              )}
+            </TouchableOpacity>
           )}
         </View>
-
-        {isOutOfStock ? (
-          <View style={styles.outOfStockButton}>
-            <Text style={styles.outOfStockText}>Out of Stock</Text>
-          </View>
-        ) : (
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={handleAddToCart}
-            disabled={isAdding}
-            activeOpacity={0.8}
-            accessibilityLabel={`Add ${product.name} to cart`}
-            accessibilityRole="button"
-          >
-            {isAdding ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              <Text style={styles.addButtonText}>ADD</Text>
-            )}
-          </TouchableOpacity>
-        )}
       </View>
     </TouchableOpacity>
   );
 }
 
+// ─── Home Screen ──────────────────────────────────────────────────────────────
 export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
+  const totalItems = useCartStore((s) => s.totalItems);
 
   const categoriesQuery = useQuery({
     queryKey: ['categories'],
@@ -174,259 +213,296 @@ export default function HomeScreen() {
     setRefreshing(false);
   }, [categoriesQuery, productsQuery, settingsQuery]);
 
+  const storeAddress = settingsQuery.data?.storeAddress || 'Your City';
+
   return (
-    <ScrollView
-      style={styles.container}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          tintColor="#00B7B5"
-          colors={['#00B7B5']}
-        />
-      }
-    >
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.offWhite} />
 
-      {/* Header */}
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.greeting}>Welcome to</Text>
-          <Text style={styles.appName}>BazaarBasket 🧺</Text>
-        </View>
-        <TouchableOpacity
-          style={styles.notificationButton}
-          accessibilityLabel="Notifications"
-          accessibilityRole="button"
-          activeOpacity={0.7}
-        >
-          <Ionicons name="notifications-outline" size={22} color="#1E293B" />
-          <View style={styles.notifDot} />
-        </TouchableOpacity>
-      </View>
-
-      {/* Banner */}
-      <View style={styles.bannerContainer}>
-        <LinearGradient
-          colors={['#00B7B5', '#00A19F']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.banner}
-        >
-          <View style={styles.bannerContent}>
-            <Text style={styles.bannerTitle}>{settingsQuery.data?.bannerTitle || 'Fresh Groceries'}</Text>
-            <Text style={styles.bannerSubtitle}>{settingsQuery.data?.bannerSubtitle || 'Delivered in minutes'}</Text>
-            <View style={styles.bannerOfferContainer}>
-              <Text style={styles.bannerOffer}>{settingsQuery.data?.bannerOffer || 'Free delivery on orders above ₹499'}</Text>
-            </View>
-          </View>
-          <View style={styles.bannerIconContainer}>
-            <Ionicons name="basket" size={72} color="rgba(255,255,255,0.2)" />
-          </View>
-        </LinearGradient>
-      </View>
-
-      {/* Categories */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeaderRow}>
-          <View style={styles.sectionTitleRow}>
-            <View style={styles.sectionAccent} />
-            <Text style={styles.sectionTitle}>Shop by Category</Text>
-          </View>
-        </View>
-        {categoriesQuery.isLoading ? (
-          <ActivityIndicator size="small" color="#00B7B5" style={styles.loader} />
-        ) : (
-          <FlatList
-            data={categoriesQuery.data || []}
-            keyExtractor={(item) => item.id}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            renderItem={({ item }) => <CategoryItem category={item} />}
-            contentContainerStyle={styles.categoryList}
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={COLORS.primaryGreen}
+            colors={[COLORS.primaryGreen]}
           />
-        )}
-      </View>
-
-      {/* Featured Products */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeaderRow}>
-          <View style={styles.sectionTitleRow}>
-            <View style={styles.sectionAccent} />
-            <Text style={styles.sectionTitle}>Featured Products</Text>
-          </View>
+        }
+      >
+        {/* ─── Search Header ─────────────────────────────────────────── */}
+        <View style={styles.header}>
           <TouchableOpacity
+            style={styles.searchBar}
             onPress={() => router.push('/(tabs)/search')}
-            accessibilityLabel="View all products"
-            accessibilityRole="button"
+            activeOpacity={0.7}
+            accessibilityLabel="Search for food"
+            accessibilityRole="search"
           >
-            <Text style={styles.viewAllText}>View All →</Text>
+            <Ionicons name="search" size={20} color={COLORS.textMuted} />
+            <Text style={styles.searchPlaceholder}>Search for food...</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.cartButton}
+            onPress={() => router.push('/(tabs)/cart')}
+            accessibilityLabel="Cart"
+            accessibilityRole="button"
+            activeOpacity={0.7}
+          >
+            <Ionicons name="cart-outline" size={24} color={COLORS.textPrimary} />
+            {totalItems > 0 && (
+              <View style={styles.cartBadge}>
+                <Text style={styles.cartBadgeText}>
+                  {totalItems > 9 ? '9+' : totalItems}
+                </Text>
+              </View>
+            )}
           </TouchableOpacity>
         </View>
 
-        {productsQuery.isLoading ? (
-          <ActivityIndicator size="large" color="#00B7B5" style={styles.loader} />
-        ) : (
-          <View style={styles.productGrid}>
-            {(productsQuery.data?.products || []).map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
+        {/* ─── Current Location ──────────────────────────────────────── */}
+        <View style={styles.locationContainer}>
+          <Text style={styles.locationLabel}>Current Location</Text>
+          <View style={styles.locationRow}>
+            <Ionicons name="location" size={16} color={COLORS.primaryGreen} />
+            <Text style={styles.locationText}>{storeAddress}</Text>
+            <Ionicons name="chevron-down" size={14} color={COLORS.textSecondary} />
           </View>
-        )}
-      </View>
+        </View>
 
-      <View style={styles.bottomSpacer} />
-    </ScrollView>
+        {/* ─── Categories ────────────────────────────────────────────── */}
+        <View style={styles.categoriesSection}>
+          {categoriesQuery.isLoading ? (
+            <ActivityIndicator size="small" color={COLORS.primaryGreen} style={styles.loader} />
+          ) : (
+            <FlatList
+              data={categoriesQuery.data || []}
+              keyExtractor={(item) => item.id}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              renderItem={({ item }) => <CategoryItem category={item} />}
+              contentContainerStyle={styles.categoryList}
+            />
+          )}
+        </View>
+
+        {/* ─── Promotional Banner ────────────────────────────────────── */}
+        <View style={styles.bannerContainer}>
+          <LinearGradient
+            colors={['#4CAF50', '#388E3C']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.banner}
+          >
+            <View style={styles.bannerLeft}>
+              <Text style={styles.bannerLabel}>
+                {settingsQuery.data?.bannerTitle || 'New Year Offer'}
+              </Text>
+              <Text style={styles.bannerDiscount}>
+                {settingsQuery.data?.bannerOffer || '40% OFF'}
+              </Text>
+              <Text style={styles.bannerDate}>
+                {settingsQuery.data?.bannerSubtitle || '16-31 Dec'}
+              </Text>
+
+              <View style={styles.bannerButtonRow}>
+                <TouchableOpacity
+                  style={styles.bannerButton}
+                  onPress={() => router.push('/(tabs)/search')}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.bannerButtonText}>Get Now</Text>
+                </TouchableOpacity>
+                <View style={styles.bannerArrow}>
+                  <Ionicons name="arrow-forward" size={16} color={COLORS.white} />
+                </View>
+              </View>
+            </View>
+
+            {/* Right side promotional image area */}
+            <View style={styles.bannerRight}>
+              <View style={styles.bannerDiscountBadge}>
+                <Text style={styles.bannerDiscountBadgeLabel}>DISCOUNT</Text>
+                <Text style={styles.bannerDiscountBadgePercent}>40%</Text>
+                <Text style={styles.bannerDiscountBadgeOff}>OFF</Text>
+              </View>
+              <View style={styles.bannerImagePlaceholder}>
+                <Ionicons name="gift" size={48} color="rgba(255,255,255,0.4)" />
+              </View>
+              <View style={styles.bannerAllProducts}>
+                <Text style={styles.bannerAllProductsText}>ALL PRODUCT</Text>
+              </View>
+            </View>
+          </LinearGradient>
+        </View>
+
+        {/* ─── Recommended for You ───────────────────────────────────── */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={styles.sectionTitle}>Recommended for you</Text>
+            <TouchableOpacity
+              onPress={() => router.push('/(tabs)/search')}
+              accessibilityLabel="See more products"
+              accessibilityRole="button"
+            >
+              <Text style={styles.seeMoreText}>See more</Text>
+            </TouchableOpacity>
+          </View>
+
+          {productsQuery.isLoading ? (
+            <ActivityIndicator size="large" color={COLORS.primaryGreen} style={styles.loader} />
+          ) : (
+            <View style={styles.productGrid}>
+              {(productsQuery.data?.products || []).map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </View>
+          )}
+        </View>
+
+        <View style={styles.bottomSpacer} />
+      </ScrollView>
+    </View>
   );
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.offWhite,
   },
+  scrollView: {
+    flex: 1,
+  },
+
+  // ── Header / Search ───────────────────────────────────────────────────────
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 60,
-    paddingBottom: 16,
-    backgroundColor: '#FFFFFF',
+    paddingTop: Platform.OS === 'ios' ? 60 : 48,
+    paddingBottom: 12,
+    gap: 12,
+    backgroundColor: COLORS.offWhite,
   },
-  greeting: {
-    fontSize: 14,
-    color: '#94A3B8',
-    fontWeight: '400',
+  searchBar: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.white,
+    borderRadius: 28,
+    paddingHorizontal: 18,
+    height: 50,
+    gap: 10,
+    borderWidth: 1,
+    borderColor: COLORS.borderLight,
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  appName: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#000000',
-    letterSpacing: -0.3,
+  searchPlaceholder: {
+    fontSize: 15,
+    color: COLORS.textMuted,
+    flex: 1,
   },
-  notificationButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    backgroundColor: '#F1F5F9',
+  cartButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: COLORS.white,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: COLORS.borderLight,
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  notifDot: {
+  cartBadge: {
     position: 'absolute',
-    top: 10,
-    right: 12,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#EF4444',
-    borderWidth: 1.5,
-    borderColor: '#FFFFFF',
-  },
-  bannerContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 24,
-    backgroundColor: '#FFFFFF',
-  },
-  banner: {
-    borderRadius: 18,
-    padding: 24,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    top: 6,
+    right: 6,
+    backgroundColor: COLORS.red,
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    justifyContent: 'center',
     alignItems: 'center',
-    overflow: 'hidden',
-    shadowColor: '#00B7B5',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
-    shadowRadius: 16,
-    elevation: 6,
+    paddingHorizontal: 4,
+    borderWidth: 2,
+    borderColor: COLORS.white,
   },
-  bannerContent: {
-    flex: 1,
-  },
-  bannerTitle: {
-    fontSize: 22,
+  cartBadgeText: {
+    color: COLORS.white,
+    fontSize: 9,
     fontWeight: '700',
-    color: '#FFFFFF',
+  },
+
+  // ── Location ──────────────────────────────────────────────────────────────
+  locationContainer: {
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingBottom: 16,
+  },
+  locationLabel: {
+    fontSize: 13,
+    color: COLORS.primaryGreen,
+    fontWeight: '600',
     marginBottom: 4,
+    letterSpacing: 0.3,
   },
-  bannerSubtitle: {
-    fontSize: 15,
-    color: 'rgba(255,255,255,0.85)',
-    marginBottom: 10,
-  },
-  bannerOfferContainer: {
-    alignSelf: 'flex-start',
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-  },
-  bannerOffer: {
-    fontSize: 12,
-    color: '#FFFFFF',
-    fontWeight: '600',
-  },
-  bannerIconContainer: {
-    marginLeft: 8,
-  },
-  section: {
-    marginBottom: 24,
-  },
-  sectionHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    marginBottom: 14,
-  },
-  sectionTitleRow: {
+  locationRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: 4,
   },
-  sectionAccent: {
-    width: 4,
-    height: 20,
-    borderRadius: 2,
-    backgroundColor: '#00B7B5',
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#000000',
-  },
-  viewAllText: {
+  locationText: {
     fontSize: 14,
-    color: '#00A19F',
+    color: COLORS.textPrimary,
     fontWeight: '600',
+  },
+
+  // ── Categories ────────────────────────────────────────────────────────────
+  categoriesSection: {
+    paddingBottom: 20,
   },
   categoryList: {
     paddingHorizontal: 16,
-    gap: 12,
+    gap: 16,
   },
   categoryItem: {
     alignItems: 'center',
-    width: 80,
+    width: CATEGORY_CIRCLE_SIZE + 16,
+  },
+  categoryRing: {
+    width: CATEGORY_CIRCLE_SIZE + 8,
+    height: CATEGORY_CIRCLE_SIZE + 8,
+    borderRadius: (CATEGORY_CIRCLE_SIZE + 8) / 2,
+    borderWidth: 2.5,
+    borderColor: COLORS.primaryGreen,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+    backgroundColor: COLORS.white,
+    shadowColor: COLORS.primaryGreen,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 3,
   },
   categoryImageWrapper: {
-    width: 66,
-    height: 66,
-    borderRadius: 18,
-    backgroundColor: '#FFFFFF',
+    width: CATEGORY_CIRCLE_SIZE,
+    height: CATEGORY_CIRCLE_SIZE,
+    borderRadius: CATEGORY_CIRCLE_SIZE / 2,
     overflow: 'hidden',
-    marginBottom: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: '#F1F5F9',
+    backgroundColor: COLORS.white,
   },
   categoryImage: {
     width: '100%',
@@ -435,55 +511,182 @@ const styles = StyleSheet.create({
   categoryPlaceholder: {
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
+    backgroundColor: COLORS.lightGreen,
   },
   categoryName: {
     fontSize: 12,
-    color: '#475569',
+    color: COLORS.textPrimary,
     textAlign: 'center',
     fontWeight: '500',
   },
+
+  // ── Banner ────────────────────────────────────────────────────────────────
+  bannerContainer: {
+    paddingHorizontal: 20,
+    paddingBottom: 24,
+  },
+  banner: {
+    borderRadius: 18,
+    padding: 20,
+    flexDirection: 'row',
+    overflow: 'hidden',
+    minHeight: 160,
+    shadowColor: COLORS.darkGreen,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 14,
+    elevation: 8,
+  },
+  bannerLeft: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  bannerLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.9)',
+    marginBottom: 4,
+  },
+  bannerDiscount: {
+    fontSize: 32,
+    fontWeight: '800',
+    color: COLORS.white,
+    marginBottom: 2,
+    letterSpacing: -0.5,
+  },
+  bannerDate: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.8)',
+    marginBottom: 14,
+  },
+  bannerButtonRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  bannerButton: {
+    backgroundColor: COLORS.white,
+    borderRadius: 20,
+    paddingHorizontal: 18,
+    paddingVertical: 8,
+  },
+  bannerButtonText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.darkGreen,
+  },
+  bannerArrow: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  bannerRight: {
+    width: 120,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  bannerDiscountBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: '#FF5722',
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    alignItems: 'center',
+    zIndex: 2,
+  },
+  bannerDiscountBadgeLabel: {
+    fontSize: 7,
+    fontWeight: '800',
+    color: '#FFEB3B',
+    letterSpacing: 0.5,
+  },
+  bannerDiscountBadgePercent: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: COLORS.white,
+    lineHeight: 18,
+  },
+  bannerDiscountBadgeOff: {
+    fontSize: 8,
+    fontWeight: '800',
+    color: '#FFEB3B',
+  },
+  bannerImagePlaceholder: {
+    width: 90,
+    height: 80,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  bannerAllProducts: {
+    marginTop: 6,
+    backgroundColor: '#FFEB3B',
+    borderRadius: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  bannerAllProductsText: {
+    fontSize: 8,
+    fontWeight: '800',
+    color: '#E65100',
+    letterSpacing: 0.5,
+  },
+
+  // ── Section Headers ───────────────────────────────────────────────────────
+  section: {
+    marginBottom: 24,
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+  },
+  seeMoreText: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    fontWeight: '500',
+  },
+
+  // ── Product Cards ─────────────────────────────────────────────────────────
   productGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     paddingHorizontal: 20,
-    gap: 12,
+    gap: 16,
   },
   productCard: {
     width: PRODUCT_CARD_WIDTH,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    backgroundColor: COLORS.cardBg,
+    borderRadius: 18,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: '#F1F5F9',
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
   },
   productCardOutOfStock: {
-    opacity: 0.6,
-  },
-  discountBadge: {
-    position: 'absolute',
-    top: 8,
-    left: 8,
-    zIndex: 1,
-    backgroundColor: '#EF4444',
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-  },
-  discountText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    opacity: 0.55,
   },
   productImageContainer: {
     width: '100%',
-    height: PRODUCT_CARD_WIDTH * 0.8,
-    backgroundColor: '#F8FAFC',
+    height: PRODUCT_CARD_WIDTH * 0.7,
+    backgroundColor: '#F8F9FA',
+    position: 'relative',
   },
   productImage: {
     width: '100%',
@@ -493,65 +696,71 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  heartButton: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: COLORS.white,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: COLORS.shadow,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
   productInfo: {
     padding: 12,
+    paddingTop: 10,
   },
   productName: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#000000',
-    marginBottom: 4,
-    lineHeight: 18,
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+    marginBottom: 3,
   },
-  productUnit: {
-    fontSize: 11,
-    color: '#94A3B8',
-    marginBottom: 8,
+  productDescription: {
+    fontSize: 12,
+    color: COLORS.textMuted,
+    marginBottom: 10,
+    lineHeight: 16,
   },
   priceRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginBottom: 10,
+    justifyContent: 'space-between',
   },
   productPrice: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#00A19F',
-  },
-  productMrp: {
-    fontSize: 12,
-    color: '#94A3B8',
-    textDecorationLine: 'line-through',
+    fontSize: 16,
+    fontWeight: '800',
+    color: COLORS.textPrimary,
   },
   addButton: {
-    backgroundColor: '#00B7B5',
-    borderRadius: 10,
-    paddingVertical: 8,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: COLORS.primaryGreen,
+    justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#00B7B5',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
+    shadowColor: COLORS.primaryGreen,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
     elevation: 3,
   },
-  addButtonText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#000000',
-    letterSpacing: 1,
-  },
-  outOfStockButton: {
-    backgroundColor: '#F1F5F9',
-    borderRadius: 10,
-    paddingVertical: 8,
+  addButtonDisabled: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#E5E7EB',
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  outOfStockText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#94A3B8',
-  },
+
+  // ── Misc ──────────────────────────────────────────────────────────────────
   loader: {
     paddingVertical: 20,
   },
