@@ -9,13 +9,18 @@ import {
   getDoc,
   doc,
   setDoc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  arrayUnion,
+  increment,
+  runTransaction,
   type DocumentSnapshot,
   type QueryConstraint,
   getCountFromServer,
   Timestamp,
 } from 'firebase/firestore';
-import { httpsCallable } from 'firebase/functions';
-import { functions, db } from './firebase';
+import { db } from './firebase';
 import {
   COLLECTIONS,
   PAGINATION,
@@ -31,37 +36,208 @@ import {
   type UpdateCategoryInput,
   type UpdateOrderStatusInput,
   type StoreSettings,
+  sanitizeObject,
+  generateSlug,
+  OrderStatus,
+  PaymentStatus,
+  ORDER_STATUS_TRANSITIONS,
+  CLOUDINARY_FOLDERS,
+  type ProductImage,
 } from '@bazaarbasket/shared';
 
-// ──── Cloud Function Callables ────
+// ──── Cloudinary Direct Direct Upload Helper ────
 
-const createProductFn = httpsCallable<CreateProductInput, { productId: string }>(functions, 'createProduct');
-const updateProductFn = httpsCallable<UpdateProductInput, void>(functions, 'updateProduct');
-const deleteProductFn = httpsCallable<{ productId: string }, void>(functions, 'deleteProduct');
-const updateProductStockFn = httpsCallable<{ productId: string; delta: number }, void>(functions, 'updateProductStock');
-const createCategoryFn = httpsCallable<CreateCategoryInput, { categoryId: string }>(functions, 'createCategory');
-const updateCategoryFn = httpsCallable<UpdateCategoryInput, void>(functions, 'updateCategory');
-const deleteCategoryFn = httpsCallable<{ categoryId: string }, void>(functions, 'deleteCategory');
-const updateOrderStatusFn = httpsCallable<UpdateOrderStatusInput, void>(functions, 'updateOrderStatus');
-const setAdminRoleFn = httpsCallable<{ uid: string }, void>(functions, 'setAdminRole');
+async function uploadToCloudinaryClient(
+  base64Data: string,
+  folder: string,
+  fileName: string,
+): Promise<ProductImage> {
+  const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+  const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'bazaarbasket';
+
+  if (!cloudName) {
+    throw new Error('Cloudinary cloud name is not configured in VITE_CLOUDINARY_CLOUD_NAME');
+  }
+
+  const dataUri = base64Data.startsWith('data:')
+    ? base64Data
+    : `data:image/jpeg;base64,${base64Data}`;
+
+  const formData = new FormData();
+  formData.append('file', dataUri);
+  formData.append('upload_preset', uploadPreset);
+  formData.append('folder', folder);
+  formData.append('public_id', fileName.replace(/\.[^.]+$/, ''));
+
+  const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+    method: 'POST',
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errData = await response.json();
+    throw new Error(errData.error?.message || 'Failed to upload image to Cloudinary');
+  }
+
+  const result = await response.json();
+  const secureUrl = result.secure_url;
+  
+  // Create w_400 transform thumbnail URL
+  const thumbnailUrl = secureUrl.replace('/upload/', '/upload/w_400,h_400,c_fill,q_auto,f_auto/');
+
+  return {
+    url: secureUrl,
+    publicId: result.public_id,
+    width: result.width,
+    height: result.height,
+    thumbnailUrl,
+  };
+}
 
 // ──── Products ────
 
 export async function createProduct(input: CreateProductInput): Promise<{ productId: string }> {
-  const result = await createProductFn(input);
-  return result.data;
+  const sanitized = sanitizeObject(input as unknown as Record<string, unknown>);
+
+  const images: ProductImage[] = [];
+  for (const img of input.images || []) {
+    const result = await uploadToCloudinaryClient(
+      img.base64,
+      CLOUDINARY_FOLDERS.PRODUCT_IMAGES,
+      `${Date.now()}_${img.fileName}`,
+    );
+    images.push(result);
+  }
+
+  const slug = generateSlug(sanitized.name as string);
+  const now = new Date();
+
+  const productData: Omit<Product, 'id'> = {
+    name: sanitized.name as string,
+    slug,
+    description: (sanitized.description as string) || '',
+    categoryId: sanitized.categoryId as string,
+    price: input.price,
+    mrp: input.mrp,
+    unit: sanitized.unit as string,
+    stock: input.stock,
+    images,
+    isActive: input.isActive ?? true,
+    tags: input.tags ?? [],
+    gstSlab: input.gstSlab,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  const docRef = await addDoc(collection(db, COLLECTIONS.PRODUCTS), productData);
+
+  // Update category product count
+  await updateDoc(doc(db, COLLECTIONS.CATEGORIES, input.categoryId), {
+    productCount: increment(1),
+  });
+
+  return { productId: docRef.id };
 }
 
 export async function updateProduct(input: UpdateProductInput): Promise<void> {
-  await updateProductFn(input);
+  const productRef = doc(db, COLLECTIONS.PRODUCTS, input.productId);
+  const productSnap = await getDoc(productRef);
+
+  if (!productSnap.exists()) {
+    throw new Error('Product not found');
+  }
+
+  const existingProduct = productSnap.data() as Product;
+  const updateData: Record<string, any> = { updatedAt: new Date() };
+
+  if (input.name !== undefined) {
+    const sanitized = sanitizeObject({ name: input.name });
+    updateData.name = sanitized.name;
+    updateData.slug = generateSlug(sanitized.name);
+  }
+  if (input.description !== undefined) {
+    updateData.description = sanitizeObject({ description: input.description }).description;
+  }
+  if (input.categoryId !== undefined) {
+    if (input.categoryId !== existingProduct.categoryId) {
+      await updateDoc(doc(db, COLLECTIONS.CATEGORIES, existingProduct.categoryId), {
+        productCount: increment(-1),
+      });
+      await updateDoc(doc(db, COLLECTIONS.CATEGORIES, input.categoryId), {
+        productCount: increment(1),
+      });
+    }
+    updateData.categoryId = input.categoryId;
+  }
+  if (input.price !== undefined) { updateData.price = input.price; }
+  if (input.mrp !== undefined) { updateData.mrp = input.mrp; }
+  if (input.unit !== undefined) { updateData.unit = input.unit; }
+  if (input.stock !== undefined) { updateData.stock = input.stock; }
+  if (input.isActive !== undefined) { updateData.isActive = input.isActive; }
+  if (input.tags !== undefined) { updateData.tags = input.tags; }
+  if (input.gstSlab !== undefined) { updateData.gstSlab = input.gstSlab; }
+
+  if (input.imagesToRemove && input.imagesToRemove.length > 0) {
+    const remainingImages = existingProduct.images.filter(
+      (img) => !input.imagesToRemove?.includes(img.publicId),
+    );
+    updateData.images = remainingImages;
+  }
+
+  if (input.imagesToAdd && input.imagesToAdd.length > 0) {
+    const currentImages = [...((updateData.images as ProductImage[]) || existingProduct.images)];
+    for (const img of input.imagesToAdd) {
+      const result = await uploadToCloudinaryClient(
+        img.base64,
+        CLOUDINARY_FOLDERS.PRODUCT_IMAGES,
+        `${Date.now()}_${img.fileName}`,
+      );
+      currentImages.push(result);
+    }
+    updateData.images = currentImages;
+  }
+
+  await updateDoc(productRef, updateData);
 }
 
 export async function deleteProduct(productId: string): Promise<void> {
-  await deleteProductFn({ productId });
+  const productRef = doc(db, COLLECTIONS.PRODUCTS, productId);
+  const productSnap = await getDoc(productRef);
+
+  if (!productSnap.exists()) {
+    throw new Error('Product not found');
+  }
+
+  const product = productSnap.data() as Product;
+
+  await updateDoc(productRef, { isActive: false, updatedAt: new Date() });
+
+  await updateDoc(doc(db, COLLECTIONS.CATEGORIES, product.categoryId), {
+    productCount: increment(-1),
+  });
 }
 
 export async function updateProductStock(input: { productId: string; delta: number }): Promise<void> {
-  await updateProductStockFn(input);
+  const productRef = doc(db, COLLECTIONS.PRODUCTS, input.productId);
+
+  await runTransaction(db, async (transaction) => {
+    const snap = await transaction.get(productRef);
+    if (!snap.exists()) {
+      throw new Error('Product not found');
+    }
+
+    const product = snap.data() as Product;
+    const newStock = product.stock + input.delta;
+
+    if (newStock < 0) {
+      throw new Error(`Insufficient stock. Current: ${product.stock}, requested delta: ${input.delta}`);
+    }
+
+    transaction.update(productRef, {
+      stock: newStock,
+      updatedAt: new Date(),
+    });
+  });
 }
 
 export async function getProducts(params: {
@@ -119,16 +295,95 @@ export async function getProduct(productId: string): Promise<Product | null> {
 // ──── Categories ────
 
 export async function createCategory(input: CreateCategoryInput): Promise<{ categoryId: string }> {
-  const result = await createCategoryFn(input);
-  return result.data;
+  const sanitized = sanitizeObject({ name: input.name });
+
+  let imageUrl = '';
+  let imagePublicId = '';
+
+  if (input.image) {
+    const result = await uploadToCloudinaryClient(
+      input.image.base64,
+      CLOUDINARY_FOLDERS.CATEGORY_IMAGES,
+      `${Date.now()}_${input.image.fileName}`,
+    );
+    imageUrl = result.url;
+    imagePublicId = result.publicId;
+  }
+
+  const slug = generateSlug(sanitized.name);
+  const now = new Date();
+
+  const categoryData: Omit<Category, 'id'> = {
+    name: sanitized.name,
+    slug,
+    imageUrl,
+    imagePublicId,
+    sortOrder: input.sortOrder ?? 0,
+    isActive: input.isActive ?? true,
+    productCount: 0,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  const docRef = await addDoc(collection(db, COLLECTIONS.CATEGORIES), categoryData);
+  return { categoryId: docRef.id };
 }
 
 export async function updateCategory(input: UpdateCategoryInput): Promise<void> {
-  await updateCategoryFn(input);
+  const categoryRef = doc(db, COLLECTIONS.CATEGORIES, input.categoryId);
+  const categorySnap = await getDoc(categoryRef);
+
+  if (!categorySnap.exists()) {
+    throw new Error('Category not found');
+  }
+
+  const updateData: Record<string, any> = { updatedAt: new Date() };
+
+  if (input.name !== undefined) {
+    const sanitized = sanitizeObject({ name: input.name });
+    updateData.name = sanitized.name;
+    updateData.slug = generateSlug(sanitized.name);
+  }
+  if (input.sortOrder !== undefined) { updateData.sortOrder = input.sortOrder; }
+  if (input.isActive !== undefined) { updateData.isActive = input.isActive; }
+
+  // Handle image removal
+  if (input.removeImage) {
+    updateData.imageUrl = '';
+    updateData.imagePublicId = '';
+  }
+
+  // Handle new image upload
+  if (input.image) {
+    const result = await uploadToCloudinaryClient(
+      input.image.base64,
+      CLOUDINARY_FOLDERS.CATEGORY_IMAGES,
+      `${Date.now()}_${input.image.fileName}`,
+    );
+    updateData.imageUrl = result.url;
+    updateData.imagePublicId = result.publicId;
+  }
+
+  await updateDoc(categoryRef, updateData);
 }
 
 export async function deleteCategory(categoryId: string): Promise<void> {
-  await deleteCategoryFn({ categoryId });
+  const categoryRef = doc(db, COLLECTIONS.CATEGORIES, categoryId);
+  const categorySnap = await getDoc(categoryRef);
+
+  if (!categorySnap.exists()) {
+    throw new Error('Category not found');
+  }
+
+  const category = categorySnap.data() as Category;
+
+  if (category.productCount > 0) {
+    throw new Error(
+      `Cannot delete category with ${category.productCount} product(s). Move or delete them first.`,
+    );
+  }
+
+  await deleteDoc(categoryRef);
 }
 
 export async function getCategories(): Promise<Category[]> {
@@ -179,13 +434,59 @@ export async function getOrder(orderId: string): Promise<Order | null> {
 }
 
 export async function updateOrderStatus(input: UpdateOrderStatusInput): Promise<void> {
-  await updateOrderStatusFn(input);
+  const orderRef = doc(db, COLLECTIONS.ORDERS, input.orderId);
+  const orderSnap = await getDoc(orderRef);
+
+  if (!orderSnap.exists()) {
+    throw new Error('Order not found');
+  }
+
+  const order = orderSnap.data() as Order;
+
+  // Validate status transition
+  const allowedTransitions = ORDER_STATUS_TRANSITIONS[order.status];
+  if (!allowedTransitions.includes(input.status)) {
+    throw new Error(
+      `Cannot transition from "${order.status}" to "${input.status}". Allowed: ${allowedTransitions.join(', ') || 'none'}`,
+    );
+  }
+
+  const now = new Date();
+  const updateData: Record<string, any> = {
+    status: input.status,
+    updatedAt: now,
+    statusHistory: arrayUnion({
+      status: input.status,
+      timestamp: now,
+      note: input.note || `Status updated by admin`,
+    }),
+  };
+
+  // If delivered, mark payment as paid for COD
+  if (input.status === OrderStatus.DELIVERED) {
+    updateData.paymentStatus = PaymentStatus.PAID;
+  }
+
+  // If cancelled by admin, restore stock
+  if (input.status === OrderStatus.CANCELLED) {
+    for (const item of order.items) {
+      await updateDoc(doc(db, COLLECTIONS.PRODUCTS, item.productId), {
+        stock: increment(item.quantity),
+      });
+    }
+    updateData.cancelReason = input.note || 'Cancelled by admin';
+  }
+
+  await updateDoc(orderRef, updateData);
 }
 
 // ──── Users ────
 
 export async function setAdminRole(uid: string): Promise<void> {
-  await setAdminRoleFn({ uid });
+  await updateDoc(doc(db, COLLECTIONS.USERS, uid), {
+    role: 'admin',
+    updatedAt: new Date(),
+  });
 }
 
 export async function getUsers(params: {

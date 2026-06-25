@@ -3,7 +3,8 @@
 
 import { create } from 'zustand';
 import { type User, signInWithEmailAndPassword, signOut as firebaseSignOut, type IdTokenResult } from 'firebase/auth';
-import { auth } from '../services/firebase';
+import { auth, db } from '../services/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 interface AuthState {
   user: User | null;
@@ -39,9 +40,16 @@ export const useAuthStore = create<AuthState>((set) => ({
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
       
-      // Verify custom claims (must have role: 'admin')
+      // Verify custom claims (must have role: 'admin') or check fallback in Firestore
       const tokenResult: IdTokenResult = await user.getIdTokenResult(true);
-      const isAdmin = tokenResult.claims.role === 'admin';
+      let isAdmin = tokenResult.claims.role === 'admin';
+
+      if (!isAdmin) {
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (userDoc.exists() && userDoc.data()?.role === 'admin') {
+          isAdmin = true;
+        }
+      }
       
       if (!isAdmin) {
         // Sign out if not admin

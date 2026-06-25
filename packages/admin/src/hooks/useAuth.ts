@@ -3,7 +3,8 @@
 
 import { useEffect, useCallback } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from '../services/firebase';
+import { auth, db } from '../services/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 import { useAuthStore } from '../stores/authStore';
 
 const INACTIVITY_TIMEOUT = 30 * 60 * 1000; // 30 minutes in ms
@@ -26,7 +27,14 @@ export function useAuth() {
       if (currentUser) {
         try {
           const tokenResult = await currentUser.getIdTokenResult();
-          const isUserAdmin = tokenResult.claims.role === 'admin';
+          let isUserAdmin = tokenResult.claims.role === 'admin';
+
+          if (!isUserAdmin) {
+            const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+            if (userDoc.exists() && userDoc.data()?.role === 'admin') {
+              isUserAdmin = true;
+            }
+          }
 
           if (isUserAdmin) {
             store.setUser(currentUser);

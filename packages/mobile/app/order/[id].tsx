@@ -95,7 +95,7 @@ export default function OrderDetailScreen() {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#00B7B5" />
+        <ActivityIndicator size="large" color="#4CAF50" />
       </View>
     );
   }
@@ -133,17 +133,17 @@ export default function OrderDetailScreen() {
         <Text style={styles.sectionTitle}>Delivery Details</Text>
         <View style={styles.card}>
           <View style={styles.detailRow}>
-            <Ionicons name="location" size={16} color="#00B7B5" />
+            <Ionicons name="location" size={16} color="#4CAF50" />
             <Text style={styles.detailText}>
               {order.deliveryAddress.addressLine1}, {order.deliveryAddress.city}
             </Text>
           </View>
           <View style={styles.detailRow}>
-            <Ionicons name="time" size={16} color="#00B7B5" />
+            <Ionicons name="time" size={16} color="#4CAF50" />
             <Text style={styles.detailText}>{order.deliverySlot.label}</Text>
           </View>
           <View style={styles.detailRow}>
-            <Ionicons name="cash" size={16} color="#00B7B5" />
+            <Ionicons name="cash" size={16} color="#4CAF50" />
             <Text style={styles.detailText}>Cash on Delivery</Text>
           </View>
         </View>
@@ -219,14 +219,14 @@ const styles = StyleSheet.create({
   stepContainer: {},
   stepRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   stepCircle: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#F1F5F9', justifyContent: 'center', alignItems: 'center' },
-  stepCircleCompleted: { backgroundColor: '#00A19F' },
-  stepCircleCurrent: { backgroundColor: '#00B7B5', shadowColor: '#00B7B5', shadowOpacity: 0.3, shadowRadius: 8 },
+  stepCircleCompleted: { backgroundColor: '#388E3C' },
+  stepCircleCurrent: { backgroundColor: '#4CAF50', shadowColor: '#4CAF50', shadowOpacity: 0.3, shadowRadius: 8 },
   stepNumber: { fontSize: 12, color: '#94A3B8', fontWeight: '600' },
   stepLabel: { fontSize: 14, color: '#94A3B8' },
   stepLabelCompleted: { color: '#000000' },
-  stepLabelCurrent: { color: '#00A19F', fontWeight: '700' },
+  stepLabelCurrent: { color: '#388E3C', fontWeight: '700' },
   stepLine: { width: 2, height: 24, backgroundColor: '#F1F5F9', marginLeft: 13, marginVertical: 4 },
-  stepLineCompleted: { backgroundColor: '#00A19F' },
+  stepLineCompleted: { backgroundColor: '#388E3C' },
   cancelledContainer: { alignItems: 'center', paddingVertical: 12 },
   cancelledText: { fontSize: 16, fontWeight: '700', color: '#ef4444', marginTop: 8 },
   detailRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
@@ -266,8 +266,8 @@ const styles = StyleSheet.create({
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
   summaryLabel: { fontSize: 14, color: '#64748b' },
   summaryValue: { fontSize: 14, color: '#000000', fontWeight: '600' },
-  freeText: { color: '#00A19F' },
+  freeText: { color: '#388E3C' },
   divider: { height: 1, backgroundColor: '#F1F5F9', marginVertical: 10 },
   totalLabel: { fontSize: 16, fontWeight: '700', color: '#000000' },
-  totalValue: { fontSize: 20, fontWeight: '700', color: '#00A19F' },
+  totalValue: { fontSize: 20, fontWeight: '700', color: '#388E3C' },
 });

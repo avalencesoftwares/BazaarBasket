@@ -85,7 +85,7 @@ export default function AddressScreen() {
                   <Ionicons
                     name={address.label.toLowerCase() === 'home' ? 'home' : 'business'}
                     size={14}
-                    color={selectedAddressId === address.id ? '#00B7B5' : '#64748B'}
+                    color={selectedAddressId === address.id ? '#4CAF50' : '#64748B'}
                   />
                 </View>
                 <Text style={[styles.addressLabelText, selectedAddressId === address.id && styles.selectedText]}>
@@ -113,7 +113,7 @@ export default function AddressScreen() {
           activeOpacity={0.7}
         >
           <View style={styles.addIconBg}>
-            <Ionicons name="add" size={18} color="#00B7B5" />
+            <Ionicons name="add" size={18} color="#4CAF50" />
           </View>
           <Text style={styles.addAddressText}>Add New Address</Text>
           <Ionicons name={showForm ? 'chevron-up' : 'chevron-down'} size={18} color="#94A3B8" />
@@ -132,7 +132,7 @@ export default function AddressScreen() {
             </View>
             <TextInput style={styles.input} placeholder="Landmark (Optional)" placeholderTextColor="#94A3B8" value={formData.landmark} onChangeText={(text) => setFormData({ ...formData, landmark: text })} accessibilityLabel="Landmark" />
             <TouchableOpacity style={styles.saveAddressButton} accessibilityLabel="Save address" activeOpacity={0.85}>
-              <LinearGradient colors={['#00B7B5', '#00A19F']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.saveGradient}>
+              <LinearGradient colors={['#4CAF50', '#388E3C']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.saveGradient}>
                 <Text style={styles.saveAddressText}>Save Address</Text>
               </LinearGradient>
             </TouchableOpacity>
@@ -151,13 +151,13 @@ export default function AddressScreen() {
           accessibilityRole="button"
         >
           <LinearGradient
-            colors={selectedAddressId ? ['#00B7B5', '#00A19F'] : ['#94A3B8', '#94A3B8']}
+            colors={selectedAddressId ? ['#4CAF50', '#388E3C'] : ['#94A3B8', '#94A3B8']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.continueGradient}
           >
             <Text style={styles.continueText}>Continue</Text>
-            <Ionicons name="arrow-forward" size={20} color="#000000" />
+            <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
           </LinearGradient>
         </TouchableOpacity>
       </View>
@@ -203,9 +203,9 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   addressCardSelected: {
-    borderColor: '#00B7B5',
-    backgroundColor: '#EBF9F9',
-    shadowColor: '#00B7B5',
+    borderColor: '#4CAF50',
+    backgroundColor: '#E8F5E9',
+    shadowColor: '#4CAF50',
     shadowOpacity: 0.1,
   },
   addressHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
@@ -218,21 +218,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  addressIconBgSelected: { backgroundColor: '#D1F5F5' },
+  addressIconBgSelected: { backgroundColor: '#C8E6C9' },
   addressLabelText: { fontSize: 14, fontWeight: '700', color: '#000000' },
-  selectedText: { color: '#00A19F' },
+  selectedText: { color: '#388E3C' },
   defaultBadge: {
     fontSize: 10,
     fontWeight: '600',
     color: '#000000',
-    backgroundColor: '#D1F5F5',
+    backgroundColor: '#C8E6C9',
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 6,
   },
   radio: { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: '#CBD5E1', justifyContent: 'center', alignItems: 'center' },
-  radioSelected: { borderColor: '#00B7B5' },
-  radioDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#00B7B5' },
+  radioSelected: { borderColor: '#4CAF50' },
+  radioDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: '#4CAF50' },
   addressName: { fontSize: 15, fontWeight: '600', color: '#000000', marginBottom: 4 },
   addressLine: { fontSize: 13, color: '#64748B', lineHeight: 20 },
   addressPhone: { fontSize: 13, color: '#64748B', marginTop: 6 },
@@ -247,13 +247,13 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 10,
-    backgroundColor: '#EBF9F9',
+    backgroundColor: '#E8F5E9',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#D1F5F5',
+    borderColor: '#C8E6C9',
   },
-  addAddressText: { flex: 1, fontSize: 15, color: '#00A19F', fontWeight: '600' },
+  addAddressText: { flex: 1, fontSize: 15, color: '#388E3C', fontWeight: '600' },
   formContainer: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
@@ -283,7 +283,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: 'hidden',
     marginTop: 4,
-    shadowColor: '#00B7B5',
+    shadowColor: '#4CAF50',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
@@ -311,7 +311,7 @@ const styles = StyleSheet.create({
   continueButton: {
     borderRadius: 14,
     overflow: 'hidden',
-    shadowColor: '#00B7B5',
+    shadowColor: '#4CAF50',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.3,
     shadowRadius: 12,

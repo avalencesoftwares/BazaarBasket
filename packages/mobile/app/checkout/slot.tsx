@@ -143,13 +143,13 @@ export default function SlotPickerScreen() {
           accessibilityRole="button"
         >
           <LinearGradient
-            colors={selectedDate && selectedSlot ? ['#00B7B5', '#00A19F'] : ['#94A3B8', '#94A3B8']}
+            colors={selectedDate && selectedSlot ? ['#4CAF50', '#388E3C'] : ['#94A3B8', '#94A3B8']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.continueGradient}
           >
             <Text style={styles.continueText}>Continue</Text>
-            <Ionicons name="arrow-forward" size={20} color="#000000" />
+            <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
           </LinearGradient>
         </TouchableOpacity>
       </View>
@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 20, fontWeight: '700', color: '#000000' },
   subtitle: { fontSize: 13, color: '#94A3B8', marginTop: 2 },
   sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14, marginTop: 8 },
-  sectionAccent: { width: 4, height: 18, borderRadius: 2, backgroundColor: '#00B7B5' },
+  sectionAccent: { width: 4, height: 18, borderRadius: 2, backgroundColor: '#4CAF50' },
   sectionTitle: { fontSize: 16, fontWeight: '700', color: '#000000' },
   dateRow: { gap: 10, marginBottom: 28 },
   dateCard: {
@@ -201,15 +201,15 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   dateCardSelected: {
-    borderColor: '#00B7B5',
-    backgroundColor: '#EBF9F9',
-    shadowColor: '#00B7B5',
+    borderColor: '#4CAF50',
+    backgroundColor: '#E8F5E9',
+    shadowColor: '#4CAF50',
     shadowOpacity: 0.12,
     elevation: 3,
   },
   dayName: { fontSize: 12, color: '#94A3B8', fontWeight: '600', marginBottom: 2 },
   dayLabel: { fontSize: 14, color: '#000000', fontWeight: '700' },
-  selectedDateText: { color: '#00A19F' },
+  selectedDateText: { color: '#388E3C' },
   slotGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   slotCard: {
     width: '47%',
@@ -227,9 +227,9 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   slotCardSelected: {
-    borderColor: '#00B7B5',
-    backgroundColor: '#EBF9F9',
-    shadowColor: '#00B7B5',
+    borderColor: '#4CAF50',
+    backgroundColor: '#E8F5E9',
+    shadowColor: '#4CAF50',
     shadowOpacity: 0.1,
     elevation: 3,
   },
@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
   slotLabel: { fontSize: 15, fontWeight: '700', color: '#000000' },
   slotTime: { fontSize: 12, color: '#94A3B8' },
   selectedSlotText: { color: '#000000' },
-  selectedSlotTimeDim: { color: '#00A19F' },
+  selectedSlotTimeDim: { color: '#388E3C' },
   bottomBar: {
     position: 'absolute',
     bottom: 0,
@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
   continueButton: {
     borderRadius: 14,
     overflow: 'hidden',
-    shadowColor: '#00B7B5',
+    shadowColor: '#4CAF50',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.3,
     shadowRadius: 12,

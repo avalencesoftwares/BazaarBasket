@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuthStore } from '../../store/authStore';
 import { signOut } from '../../services/authService';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -37,7 +38,12 @@ export default function ProfileScreen() {
         style: 'destructive',
         onPress: async () => {
           await signOut();
-          router.replace('/(auth)/login');
+          try {
+            await AsyncStorage.removeItem('bazaarbasket_onboarding_completed');
+          } catch (e) {
+            // ignore
+          }
+          router.replace('/');
         },
       },
     ]);
@@ -54,7 +60,7 @@ export default function ProfileScreen() {
         <Text style={styles.notLoggedInSubtitle}>Sign in to view your profile and orders</Text>
         <TouchableOpacity style={styles.signInButton} onPress={() => router.push('/(auth)/login')} activeOpacity={0.85}>
           <LinearGradient
-            colors={['#00B7B5', '#00A19F']}
+            colors={['#4CAF50', '#388E3C']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.signInGradient}
@@ -68,7 +74,7 @@ export default function ProfileScreen() {
 
   const menuItems: MenuItem[] = [
     { icon: 'receipt-outline', label: 'My Orders', subtitle: 'Track and manage orders', onPress: () => router.push('/order/history'), color: '#3B82F6', bgColor: '#EFF6FF' },
-    { icon: 'location-outline', label: 'Saved Addresses', subtitle: 'Manage delivery addresses', onPress: () => router.push('/checkout/address'), color: '#00B7B5', bgColor: '#EBF9F9' },
+    { icon: 'location-outline', label: 'Saved Addresses', subtitle: 'Manage delivery addresses', onPress: () => router.push('/checkout/address'), color: '#4CAF50', bgColor: '#E8F5E9' },
     { icon: 'notifications-outline', label: 'Notifications', subtitle: 'Alerts and updates', onPress: () => Alert.alert('Coming Soon'), color: '#8B5CF6', bgColor: '#F5F3FF' },
     { icon: 'help-circle-outline', label: 'Help & Support', subtitle: 'FAQ and contact us', onPress: () => Alert.alert('Coming Soon'), color: '#06B6D4', bgColor: '#ECFEFF' },
     { icon: 'information-circle-outline', label: 'About BazaarBasket', subtitle: 'Version 1.0.0', onPress: () => Alert.alert('BazaarBasket v1.0.0'), color: '#64748B', bgColor: '#F8FAFC' },
@@ -108,7 +114,7 @@ export default function ProfileScreen() {
           accessibilityRole="button"
           activeOpacity={0.7}
         >
-          <Ionicons name="pencil" size={16} color="#00B7B5" />
+          <Ionicons name="pencil" size={16} color="#4CAF50" />
         </TouchableOpacity>
       </View>
 
@@ -186,10 +192,10 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 16,
-    backgroundColor: '#00B7B5',
+    backgroundColor: '#4CAF50',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#00B7B5',
+    shadowColor: '#4CAF50',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.25,
     shadowRadius: 8,
@@ -279,7 +285,7 @@ const styles = StyleSheet.create({
     marginTop: 24,
     borderRadius: 14,
     overflow: 'hidden',
-    shadowColor: '#00B7B5',
+    shadowColor: '#4CAF50',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.25,
     shadowRadius: 12,

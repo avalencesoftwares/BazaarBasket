@@ -724,11 +724,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '600',
   },
-  // Legacy list style (not used by carousel but kept for reference)
-  categoryList: {
-    paddingHorizontal: 16,
-    gap: 16,
-  },
+
 
   // ── Pagination Dots ────────────────────────────────────────────────────────
   paginationContainer: {
@@ -894,20 +890,7 @@ const styles = StyleSheet.create({
     marginRight: 0,
   },
 
-  // ── Unused old banner styles (kept so no ref errors) ──────────────────────
-  bannerDiscountBadge: {
-    display: 'none',
-  },
-  bannerDiscountBadgeLabel: {},
-  bannerDiscountBadgePercent: {},
-  bannerDiscountBadgeOff: {},
-  bannerImagePlaceholder: {
-    display: 'none',
-  },
-  bannerAllProducts: {
-    display: 'none',
-  },
-  bannerAllProductsText: {},
+
 
   // ── Section Headers ───────────────────────────────────────────────────────
   section: {
