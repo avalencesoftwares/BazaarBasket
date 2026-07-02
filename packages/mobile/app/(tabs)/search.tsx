@@ -146,7 +146,7 @@ export default function SearchScreen() {
       {/* Search Bar */}
       <View style={styles.searchContainer}>
         <View style={[styles.searchBar, isFocused && styles.searchBarFocused]}>
-          <Ionicons name="search" size={20} color={isFocused ? '#00B7B5' : '#94A3B8'} />
+          <Ionicons name="search" size={20} color={isFocused ? '#4CAF50' : '#94A3B8'} />
           <TextInput
             style={styles.searchInput}
             placeholder="Search for groceries..."
@@ -208,7 +208,7 @@ export default function SearchScreen() {
 
       {/* Results */}
       {productsQuery.isLoading ? (
-        <ActivityIndicator size="large" color="#00B7B5" style={styles.loader} />
+        <ActivityIndicator size="large" color="#4CAF50" style={styles.loader} />
       ) : (
         <FlatList
           data={productsQuery.data || []}
@@ -253,8 +253,8 @@ const styles = StyleSheet.create({
   },
   searchBarFocused: {
     backgroundColor: '#FFFFFF',
-    borderColor: '#00B7B5',
-    shadowColor: '#00B7B5',
+    borderColor: '#4CAF50',
+    shadowColor: '#4CAF50',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.1,
     shadowRadius: 8,
@@ -283,7 +283,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 1,
   },
-  chipActive: { backgroundColor: '#EBF9F9', borderColor: '#00B7B5' },
+  chipActive: { backgroundColor: '#E8F5E9', borderColor: '#4CAF50' },
   chipText: { fontSize: 13, color: '#475569', fontWeight: '600' },
   chipTextActive: { color: '#000000' },
   recentSection: { paddingHorizontal: 20, marginBottom: 16 },
@@ -330,14 +330,14 @@ const styles = StyleSheet.create({
   productName: { fontSize: 13, fontWeight: '600', color: '#000000', marginBottom: 4, lineHeight: 18 },
   productUnit: { fontSize: 11, color: '#94A3B8', marginBottom: 8 },
   priceRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 },
-  productPrice: { fontSize: 15, fontWeight: '700', color: '#00A19F' },
+  productPrice: { fontSize: 15, fontWeight: '700', color: '#388E3C' },
   productMrp: { fontSize: 12, color: '#94A3B8', textDecorationLine: 'line-through' },
   addButton: {
-    backgroundColor: '#00B7B5',
+    backgroundColor: '#4CAF50',
     borderRadius: 10,
     paddingVertical: 8,
     alignItems: 'center',
-    shadowColor: '#00B7B5',
+    shadowColor: '#4CAF50',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.2,
     shadowRadius: 6,

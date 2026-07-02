@@ -156,7 +156,7 @@ export default function VerifyOTPScreen() {
 
       {/* Decorative gradient */}
       <LinearGradient
-        colors={['#EBF9F9', '#D1F5F5', '#FFFFFF']}
+        colors={['#E8F5E9', '#C8E6C9', '#FFFFFF']}
         style={styles.topGradient}
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 1 }}
@@ -183,7 +183,7 @@ export default function VerifyOTPScreen() {
       >
         <View style={styles.iconContainer}>
           <LinearGradient
-            colors={['#00B7B5', '#00A19F']}
+            colors={['#4CAF50', '#388E3C']}
             style={styles.iconGradient}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
@@ -231,7 +231,7 @@ export default function VerifyOTPScreen() {
       </Animated.View>
 
       {isVerifying && (
-        <ActivityIndicator size="large" color="#00B7B5" style={styles.loader} />
+        <ActivityIndicator size="large" color="#4CAF50" style={styles.loader} />
       )}
 
       <TouchableOpacity
@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
   },
   iconContainer: {
     marginBottom: 16,
-    shadowColor: '#00B7B5',
+    shadowColor: '#4CAF50',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.25,
     shadowRadius: 12,
@@ -314,7 +314,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   phoneHighlight: {
-    color: '#00A19F',
+    color: '#388E3C',
     fontWeight: '600',
   },
   otpContainer: {
@@ -336,9 +336,9 @@ const styles = StyleSheet.create({
     color: '#000000',
   },
   otpInputFilled: {
-    borderColor: '#00B7B5',
-    backgroundColor: '#EBF9F9',
-    shadowColor: '#00B7B5',
+    borderColor: '#4CAF50',
+    backgroundColor: '#E8F5E9',
+    shadowColor: '#4CAF50',
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.1,
     shadowRadius: 6,
@@ -353,7 +353,7 @@ const styles = StyleSheet.create({
   },
   resendText: {
     fontSize: 15,
-    color: '#00A19F',
+    color: '#388E3C',
     fontWeight: '600',
   },
   resendTextDisabled: {

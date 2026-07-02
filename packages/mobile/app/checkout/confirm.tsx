@@ -117,7 +117,7 @@ export default function ConfirmOrderScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={[styles.sectionIconBg, styles.sectionIconBgTeal]}>
-              <Ionicons name="location" size={16} color="#00B7B5" />
+              <Ionicons name="location" size={16} color="#4CAF50" />
             </View>
             <Text style={styles.sectionTitle}>Delivery Address</Text>
           </View>
@@ -215,7 +215,7 @@ export default function ConfirmOrderScreen() {
           accessibilityRole="button"
         >
           <LinearGradient
-            colors={['#00B7B5', '#00A19F']}
+            colors={['#4CAF50', '#388E3C']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.placeOrderGradient}
@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   sectionIconBgTeal: {
-    backgroundColor: '#EBF9F9',
+    backgroundColor: '#E8F5E9',
   },
   sectionIconBgBlue: {
     backgroundColor: '#EFF6FF',
@@ -339,10 +339,10 @@ const styles = StyleSheet.create({
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
   summaryLabel: { fontSize: 14, color: '#64748B' },
   summaryValue: { fontSize: 14, color: '#000000', fontWeight: '600' },
-  freeText: { color: '#00A19F' },
+  freeText: { color: '#388E3C' },
   divider: { height: 1, backgroundColor: '#F1F5F9', marginVertical: 10 },
   totalLabel: { fontSize: 16, fontWeight: '700', color: '#000000' },
-  totalValue: { fontSize: 20, fontWeight: '700', color: '#00A19F' },
+  totalValue: { fontSize: 20, fontWeight: '700', color: '#388E3C' },
   bottomBar: {
     position: 'absolute',
     bottom: 0,
@@ -363,7 +363,7 @@ const styles = StyleSheet.create({
   placeOrderButton: {
     borderRadius: 14,
     overflow: 'hidden',
-    shadowColor: '#00B7B5',
+    shadowColor: '#4CAF50',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.3,
     shadowRadius: 12,

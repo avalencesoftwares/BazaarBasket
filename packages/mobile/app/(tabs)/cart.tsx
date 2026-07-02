@@ -96,12 +96,12 @@ function CartItemRow({ item }: { item: CartItem }) {
           activeOpacity={0.7}
           accessibilityLabel={`Decrease ${item.productName} quantity`}
         >
-          <Ionicons name={item.quantity <= 1 ? 'trash' : 'remove'} size={14} color={item.quantity <= 1 ? '#EF4444' : '#00B7B5'} />
+          <Ionicons name={item.quantity <= 1 ? 'trash' : 'remove'} size={14} color={item.quantity <= 1 ? '#EF4444' : '#4CAF50'} />
         </TouchableOpacity>
 
         <View style={styles.quantityDisplay}>
           {isUpdating ? (
-            <ActivityIndicator size="small" color="#00B7B5" />
+            <ActivityIndicator size="small" color="#4CAF50" />
           ) : (
             <Text style={styles.quantityText}>{item.quantity}</Text>
           )}
@@ -114,7 +114,7 @@ function CartItemRow({ item }: { item: CartItem }) {
           activeOpacity={0.7}
           accessibilityLabel={`Increase ${item.productName} quantity`}
         >
-          <Ionicons name="add" size={14} color="#00B7B5" />
+          <Ionicons name="add" size={14} color="#4CAF50" />
         </TouchableOpacity>
       </View>
 
@@ -156,13 +156,13 @@ export default function CartScreen() {
         <Text style={styles.emptySubtitle}>Add items from the store to get started</Text>
         <TouchableOpacity style={styles.shopButton} onPress={() => router.push('/(tabs)')} activeOpacity={0.85}>
           <LinearGradient
-            colors={['#00B7B5', '#00A19F']}
+            colors={['#4CAF50', '#388E3C']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.shopButtonGradient}
           >
             <Text style={styles.shopButtonText}>Start Shopping</Text>
-            <Ionicons name="arrow-forward" size={18} color="#000000" />
+            <Ionicons name="arrow-forward" size={18} color="#FFFFFF" />
           </LinearGradient>
         </TouchableOpacity>
       </View>
@@ -225,13 +225,13 @@ export default function CartScreen() {
           accessibilityRole="button"
         >
           <LinearGradient
-            colors={['#00B7B5', '#00A19F']}
+            colors={['#4CAF50', '#388E3C']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.checkoutGradient}
           >
             <Text style={styles.checkoutText}>Proceed to Checkout</Text>
-            <Ionicons name="arrow-forward" size={20} color="#000000" />
+            <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
           </LinearGradient>
         </TouchableOpacity>
       </View>
@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: { fontSize: 22, fontWeight: '700', color: '#1E293B' },
   clearText: { fontSize: 14, color: '#EF4444', fontWeight: '600' },
-  listContent: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 16 },
+  listContent: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 100 },
   cartItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -277,7 +277,7 @@ const styles = StyleSheet.create({
   cartItemInfo: { flex: 1 },
   itemName: { fontSize: 14, fontWeight: '600', color: '#000000', marginBottom: 2 },
   itemUnit: { fontSize: 11, color: '#94A3B8', marginBottom: 4 },
-  itemPrice: { fontSize: 13, color: '#00A19F', fontWeight: '600' },
+  itemPrice: { fontSize: 13, color: '#388E3C', fontWeight: '600' },
   quantityStepper: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -304,7 +304,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 20,
-    paddingBottom: 40,
+    paddingBottom: 110,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.06,
@@ -316,17 +316,17 @@ const styles = StyleSheet.create({
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
   summaryLabel: { fontSize: 14, color: '#000000' },
   summaryValue: { fontSize: 14, color: '#000000', fontWeight: '600' },
-  freeDelivery: { color: '#00A19F' },
+  freeDelivery: { color: '#4CAF50' },
   freeDeliveryHintContainer: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
   freeDeliveryHint: { fontSize: 12, color: '#F59E0B', fontWeight: '500' },
   divider: { height: 1, backgroundColor: '#F1F5F9', marginVertical: 12 },
   totalLabel: { fontSize: 16, fontWeight: '700', color: '#000000' },
-  totalValue: { fontSize: 20, fontWeight: '700', color: '#00A19F' },
+  totalValue: { fontSize: 20, fontWeight: '700', color: '#388E3C' },
   checkoutButton: {
     borderRadius: 14,
     marginTop: 16,
     overflow: 'hidden',
-    shadowColor: '#00B7B5',
+    shadowColor: '#4CAF50',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.3,
     shadowRadius: 12,
@@ -341,7 +341,7 @@ const styles = StyleSheet.create({
     gap: 8,
     borderRadius: 14,
   },
-  checkoutText: { fontSize: 16, fontWeight: '700', color: '#000000' },
+  checkoutText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
   emptyContainer: {
     flex: 1,
     backgroundColor: '#FFFFFF',
@@ -363,7 +363,7 @@ const styles = StyleSheet.create({
   shopButton: {
     borderRadius: 14,
     overflow: 'hidden',
-    shadowColor: '#00B7B5',
+    shadowColor: '#4CAF50',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.25,
     shadowRadius: 12,
@@ -377,5 +377,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     borderRadius: 14,
   },
-  shopButtonText: { fontSize: 16, fontWeight: '700', color: '#000000' },
+  shopButtonText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
 });

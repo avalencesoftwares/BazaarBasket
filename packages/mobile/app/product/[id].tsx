@@ -51,7 +51,7 @@ export default function ProductDetailScreen() {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#16a34a" />
+        <ActivityIndicator size="large" color="#4CAF50" />
       </View>
     );
   }
@@ -147,7 +147,7 @@ export default function ProductDetailScreen() {
               </View>
             ) : (
               <View style={styles.inStockTag}>
-                <Ionicons name="checkmark-circle" size={16} color="#22c55e" />
+                <Ionicons name="checkmark-circle" size={16} color="#4CAF50" />
                 <Text style={styles.inStockText}>In Stock</Text>
               </View>
             )}
@@ -237,13 +237,13 @@ const styles = StyleSheet.create({
   productName: { fontSize: 22, fontWeight: '700', color: '#f8fafc', marginBottom: 4 },
   productUnit: { fontSize: 14, color: '#94a3b8', marginBottom: 12 },
   priceRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap' },
-  price: { fontSize: 26, fontWeight: '700', color: '#22c55e' },
+  price: { fontSize: 26, fontWeight: '700', color: '#4CAF50' },
   mrp: { fontSize: 16, color: '#64748b', textDecorationLine: 'line-through' },
   savingsText: { fontSize: 13, color: '#f97316', fontWeight: '600' },
   gstInfo: { fontSize: 12, color: '#64748b', marginBottom: 12 },
   stockContainer: { marginBottom: 16 },
   inStockTag: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  inStockText: { fontSize: 14, color: '#22c55e', fontWeight: '600' },
+  inStockText: { fontSize: 14, color: '#4CAF50', fontWeight: '600' },
   lowStockTag: { backgroundColor: '#7c2d1220', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, alignSelf: 'flex-start' },
   lowStockText: { fontSize: 13, color: '#f97316', fontWeight: '600' },
   outOfStockTag: { backgroundColor: '#44403c20', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, alignSelf: 'flex-start' },
@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
   quantitySelector: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#0f172a', borderRadius: 10, overflow: 'hidden' },
   qtyButton: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center', backgroundColor: '#334155' },
   qtyText: { fontSize: 16, fontWeight: '700', color: '#f8fafc', paddingHorizontal: 16 },
-  addToCartButton: { flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', backgroundColor: '#16a34a', borderRadius: 12, paddingVertical: 14, gap: 8 },
+  addToCartButton: { flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', backgroundColor: '#4CAF50', borderRadius: 12, paddingVertical: 14, gap: 8 },
   addToCartDisabled: { opacity: 0.5 },
   addToCartText: { fontSize: 15, fontWeight: '700', color: '#ffffff' },
 });

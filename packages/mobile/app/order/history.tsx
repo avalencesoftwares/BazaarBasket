@@ -92,7 +92,7 @@ export default function OrderHistoryScreen() {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#00B7B5" />
+        <ActivityIndicator size="large" color="#4CAF50" />
       </View>
     );
   }
@@ -113,7 +113,7 @@ export default function OrderHistoryScreen() {
         onEndReachedThreshold={0.5}
         ListFooterComponent={
           isFetchingNextPage ? (
-            <ActivityIndicator size="small" color="#00B7B5" style={styles.footerLoader} />
+            <ActivityIndicator size="small" color="#4CAF50" style={styles.footerLoader} />
           ) : null
         }
         ListEmptyComponent={
@@ -127,7 +127,7 @@ export default function OrderHistoryScreen() {
               activeOpacity={0.85}
             >
               <LinearGradient
-                colors={['#00B7B5', '#00A19F']}
+                colors={['#4CAF50', '#388E3C']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.shopButtonGradient}
@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     overflow: 'hidden',
     marginTop: 24,
-    shadowColor: '#00B7B5',
+    shadowColor: '#4CAF50',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.25,
     shadowRadius: 12,

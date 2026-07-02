@@ -8,6 +8,16 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StyleSheet } from 'react-native';
 import { useAuthStore } from '../store/authStore';
+import * as SplashScreen from 'expo-splash-screen';
+import { useFonts } from 'expo-font';
+import {
+  PlayfairDisplay_400Regular,
+  PlayfairDisplay_700Bold,
+  PlayfairDisplay_900Black,
+} from '@expo-google-fonts/playfair-display';
+
+// Prevent splash screen auto hide to allow fonts to load
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -29,10 +39,26 @@ const styles = StyleSheet.create({
 export default function RootLayout() {
   const initialize = useAuthStore((state) => state.initialize);
 
+  const [loaded, error] = useFonts({
+    'PlayfairDisplay-Regular': PlayfairDisplay_400Regular,
+    'PlayfairDisplay-Bold': PlayfairDisplay_700Bold,
+    'PlayfairDisplay-Black': PlayfairDisplay_900Black,
+  });
+
   useEffect(() => {
     const unsubscribe = initialize();
     return () => unsubscribe();
   }, [initialize]);
+
+  useEffect(() => {
+    if (loaded || error) {
+      SplashScreen.hideAsync().catch(() => {});
+    }
+  }, [loaded, error]);
+
+  if (!loaded && !error) {
+    return null;
+  }
 
   return (
     <GestureHandlerRootView style={styles.container}>
@@ -57,9 +83,7 @@ export default function RootLayout() {
           <Stack.Screen
             name="checkout"
             options={{
-              headerShown: true,
-              title: 'Checkout',
-              headerBackTitle: 'Back',
+              headerShown: false,
             }}
           />
           <Stack.Screen
