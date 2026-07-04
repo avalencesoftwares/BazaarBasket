@@ -3,6 +3,7 @@ module.exports = {
   content: [
     './app/**/*.{ts,tsx}',
     './components/**/*.{ts,tsx}',
+    './src/**/*.{ts,tsx}',
   ],
   presets: [require('nativewind/preset')],
   theme: {
@@ -40,6 +41,20 @@ module.exports = {
           800: '#262626',
           900: '#171717',
           950: '#0a0a0a',
+        },
+        // Brand colors from reference design
+        brand: {
+          DEFAULT: '#22c55e',
+          light: '#dcfce7',
+          dark: '#16a34a',
+        },
+        // Order status colors
+        status: {
+          pending: '#eab308',
+          accepted: '#3b82f6',
+          delivering: '#f97316',
+          delivered: '#22c55e',
+          cancelled: '#ef4444',
         },
       },
       fontFamily: {
