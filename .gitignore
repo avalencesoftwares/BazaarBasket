@@ -21,8 +21,10 @@ admin/functions/.env
 mobile/.env
 mobile/.env.local
 
+
 # Firebase
 admin/functions/serviceAccountKey.json
+admin/functions/bazaarbasket-d01db-firebase-adminsdk-fbsvc-c005adb120.json
 admin/.firebase/
 .firebase/
 *-debug.log
