@@ -3,41 +3,23 @@
 
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { useCartStore } from '../../store/cartStore';
+import { View, StyleSheet, TouchableOpacity } from 'react-native';
 
 const COLORS = {
   primaryGreen: '#4CAF50',
   tabBarBg: '#58B25C', // Vibrant green matching screenshot bottom bar
   white: '#FFFFFF',
   textPrimary: '#1A1A2E',
-  red: '#EF4444',
 };
-
-// Cart badge overlay to fit the custom circular tab icon design
-function CartBadge() {
-  const totalItems = useCartStore((s) => s.totalItems);
-
-  if (totalItems === 0) {
-    return null;
-  }
-
-  return (
-    <View style={styles.badge}>
-      <Text style={styles.badgeText}>{totalItems > 99 ? '99+' : totalItems}</Text>
-    </View>
-  );
-}
 
 interface TabIconProps {
   name: keyof typeof Ionicons.glyphMap;
   focused: boolean;
   hasDot?: boolean;
-  showBadge?: boolean;
 }
 
 // Custom tab icon that renders as a circle
-function TabIcon({ name, focused, hasDot, showBadge }: TabIconProps) {
+function TabIcon({ name, focused, hasDot }: TabIconProps) {
   return (
     <View style={focused ? styles.activeContainer : styles.inactiveContainer}>
       <Ionicons
@@ -46,7 +28,6 @@ function TabIcon({ name, focused, hasDot, showBadge }: TabIconProps) {
         color={focused ? COLORS.textPrimary : COLORS.white}
       />
       {hasDot && <View style={styles.orangeDot} />}
-      {showBadge && <CartBadge />}
     </View>
   );
 }
@@ -56,7 +37,12 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
   return (
     <View style={styles.tabBarContainer}>
       {state.routes.map((route: any, index: number) => {
-        const { options } = descriptors[route.key];
+        // Only render allowed tabs (Home, Wishlist, Categories, Profile)
+        const allowedTabs = ['index', 'wishlist', 'categories', 'profile'];
+        if (!allowedTabs.includes(route.name)) {
+          return null;
+        }
+
         const isFocused = state.index === index;
 
         const onPress = () => {
@@ -80,17 +66,19 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
 
         // Determine icon name
         let iconName: keyof typeof Ionicons.glyphMap = 'home-outline';
-        if (route.name === 'index') iconName = 'home-outline';
-        else if (route.name === 'search') iconName = 'heart-outline';
-        else if (route.name === 'cart') iconName = 'cart-outline';
-        else if (route.name === 'profile') iconName = 'person-outline';
+        if (route.name === 'index') iconName = isFocused ? 'home' : 'home-outline';
+        else if (route.name === 'wishlist') iconName = isFocused ? 'heart' : 'heart-outline';
+        else if (route.name === 'categories') iconName = isFocused ? 'grid' : 'grid-outline';
+        else if (route.name === 'profile') iconName = isFocused ? 'person' : 'person-outline';
+
+        const { options } = descriptors[route.key];
 
         return (
           <TouchableOpacity
             key={route.key}
             accessibilityRole="button"
             accessibilityState={isFocused ? { selected: true } : {}}
-            accessibilityLabel={options.tabBarAccessibilityLabel}
+            accessibilityLabel={options?.tabBarAccessibilityLabel}
             onPress={onPress}
             onLongPress={onLongPress}
             style={styles.tabItem}
@@ -100,7 +88,6 @@ function CustomTabBar({ state, descriptors, navigation }: any) {
               name={iconName}
               focused={isFocused}
               hasDot={route.name === 'index' && isFocused}
-              showBadge={route.name === 'cart'}
             />
           </TouchableOpacity>
         );
@@ -124,21 +111,29 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="search"
+        name="wishlist"
         options={{
-          tabBarAccessibilityLabel: 'Search tab',
+          tabBarAccessibilityLabel: 'Wishlist tab',
         }}
       />
       <Tabs.Screen
-        name="cart"
+        name="categories"
         options={{
-          tabBarAccessibilityLabel: 'Cart tab',
+          tabBarAccessibilityLabel: 'Categories tab',
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           tabBarAccessibilityLabel: 'Profile tab',
+        }}
+      />
+      {/* Search is hidden from tab bar but still accessible via direct navigation */}
+      <Tabs.Screen
+        name="search"
+        options={{
+          href: null,
+          tabBarAccessibilityLabel: 'Search',
         }}
       />
     </Tabs>
@@ -200,24 +195,5 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFA726', // Orange dot matching screenshot
     borderWidth: 1,
     borderColor: COLORS.white,
-  },
-  badge: {
-    position: 'absolute',
-    right: -2,
-    top: -2,
-    backgroundColor: COLORS.red,
-    borderRadius: 9,
-    minWidth: 18,
-    height: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 4,
-    borderWidth: 1.5,
-    borderColor: COLORS.tabBarBg, // matches green tab bar bg
-  },
-  badgeText: {
-    color: COLORS.white,
-    fontSize: 9,
-    fontWeight: '700',
   },
 });

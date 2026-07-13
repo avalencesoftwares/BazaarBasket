@@ -1,5 +1,5 @@
-// packages/mobile/app/(tabs)/cart.tsx
-// Cart screen with quantity stepper and checkout button — Premium Light Theme
+// packages/mobile/app/cart.tsx
+// Cart screen with quantity stepper, back button, and checkout button — Premium Light Theme
 
 import { useCallback, useState } from 'react';
 import {
@@ -17,9 +17,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { formatCurrency, DELIVERY_CONFIG } from '@bazaarbasket/shared';
 import { useQuery } from '@tanstack/react-query';
-import { getStoreSettings } from '../../services/settingsService';
+import { getStoreSettings } from '../services/settingsService';
 import type { CartItem } from '@bazaarbasket/shared';
-import { useCartStore } from '../../store/cartStore';
+import { useCartStore } from '../store/cartStore';
 import { LinearGradient } from 'expo-linear-gradient';
 
 function CartItemRow({ item }: { item: CartItem }) {
@@ -125,6 +125,7 @@ function CartItemRow({ item }: { item: CartItem }) {
 
 export default function CartScreen() {
   const { items, totalItems, totalAmount, isSyncing, clearCart } = useCartStore();
+  const [fulfillmentMethod, setFulfillmentMethod] = useState<'delivery' | 'pickup'>('delivery');
 
   const { data: settings } = useQuery({
     queryKey: ['storeSettings'],
@@ -134,9 +135,18 @@ export default function CartScreen() {
 
   const freeDeliveryThreshold = settings?.freeDeliveryThreshold ?? DELIVERY_CONFIG.FREE_DELIVERY_THRESHOLD;
   const standardDeliveryFee = settings?.deliveryFee ?? DELIVERY_CONFIG.DELIVERY_FEE;
+  const minDeliveryThreshold = settings?.minOrderAmount ?? DELIVERY_CONFIG.MIN_ORDER_AMOUNT;
+  const minOrderLimit = settings?.minOrderLimit ?? 0;
 
-  const deliveryFee = totalAmount >= freeDeliveryThreshold ? 0 : standardDeliveryFee;
+  const deliveryFee = fulfillmentMethod === 'pickup'
+    ? 0
+    : (totalAmount >= freeDeliveryThreshold ? 0 : standardDeliveryFee);
   const grandTotal = totalAmount + deliveryFee;
+
+  const isBelowMinLimit = totalAmount < minOrderLimit;
+  const isBelowDeliveryMin = totalAmount < minDeliveryThreshold;
+
+  const canCheckout = fulfillmentMethod === 'delivery' ? !isBelowDeliveryMin : !isBelowMinLimit;
 
   const handleClearCart = useCallback(() => {
     Alert.alert('Clear Cart', 'Remove all items from your cart?', [
@@ -145,10 +155,33 @@ export default function CartScreen() {
     ]);
   }, [clearCart]);
 
+  const handleCheckout = useCallback(() => {
+    if (!canCheckout) return;
+    if (fulfillmentMethod === 'delivery') {
+      router.push('/checkout/address');
+    } else {
+      router.push({
+        pathname: '/checkout/confirm',
+        params: {
+          addressId: 'pickup',
+          slotDate: new Date().toISOString().split('T')[0],
+          slotStartTime: '',
+          slotEndTime: '',
+          slotLabel: 'Self Pickup (Store Working Hours)',
+        },
+      });
+    }
+  }, [fulfillmentMethod, canCheckout]);
+
   if (items.length === 0) {
     return (
       <View style={styles.emptyContainer}>
         <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+        <View style={styles.emptyHeader}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton} activeOpacity={0.7}>
+            <Ionicons name="arrow-back" size={24} color="#1E293B" />
+          </TouchableOpacity>
+        </View>
         <View style={styles.emptyIconBg}>
           <Ionicons name="cart-outline" size={56} color="#CBD5E1" />
         </View>
@@ -175,7 +208,12 @@ export default function CartScreen() {
 
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Cart ({totalItems} items)</Text>
+        <View style={styles.headerLeft}>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backButton} activeOpacity={0.7}>
+            <Ionicons name="arrow-back" size={24} color="#1E293B" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Cart ({totalItems} items)</Text>
+        </View>
         <TouchableOpacity onPress={handleClearCart} accessibilityLabel="Clear cart" activeOpacity={0.6}>
           <Text style={styles.clearText}>Clear All</Text>
         </TouchableOpacity>
@@ -192,6 +230,30 @@ export default function CartScreen() {
 
       {/* Price Summary */}
       <View style={styles.summary}>
+        {/* Fulfillment Toggle */}
+        <View style={styles.fulfillmentContainer}>
+          <TouchableOpacity
+            style={[styles.fulfillmentTab, fulfillmentMethod === 'delivery' && styles.fulfillmentTabActive]}
+            onPress={() => setFulfillmentMethod('delivery')}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="bicycle" size={16} color={fulfillmentMethod === 'delivery' ? '#FFFFFF' : '#64748B'} />
+            <Text style={[styles.fulfillmentText, fulfillmentMethod === 'delivery' && styles.fulfillmentTextActive]}>
+              Home Delivery
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.fulfillmentTab, fulfillmentMethod === 'pickup' && styles.fulfillmentTabActive]}
+            onPress={() => setFulfillmentMethod('pickup')}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="storefront" size={16} color={fulfillmentMethod === 'pickup' ? '#FFFFFF' : '#64748B'} />
+            <Text style={[styles.fulfillmentText, fulfillmentMethod === 'pickup' && styles.fulfillmentTextActive]}>
+              Self Pickup
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         <View style={styles.summaryRow}>
           <Text style={styles.summaryLabel}>Items Total</Text>
           <Text style={styles.summaryValue}>{formatCurrency(totalAmount)}</Text>
@@ -202,7 +264,26 @@ export default function CartScreen() {
             {deliveryFee === 0 ? 'FREE' : formatCurrency(deliveryFee)}
           </Text>
         </View>
-        {totalAmount < freeDeliveryThreshold && (
+
+        {fulfillmentMethod === 'delivery' && isBelowDeliveryMin && !isBelowMinLimit && (
+          <View style={styles.alertHintContainer}>
+            <Ionicons name="alert-circle" size={14} color="#D97706" />
+            <Text style={styles.alertHintText}>
+              Delivery unlocks at {formatCurrency(minDeliveryThreshold)}. Switch to Self Pickup to order.
+            </Text>
+          </View>
+        )}
+
+        {isBelowMinLimit && (
+          <View style={styles.alertHintRedContainer}>
+            <Ionicons name="ban" size={14} color="#DC2626" />
+            <Text style={styles.alertHintRedText}>
+              Min order is {formatCurrency(minOrderLimit)}. Add {formatCurrency(minOrderLimit - totalAmount)} more.
+            </Text>
+          </View>
+        )}
+
+        {fulfillmentMethod === 'delivery' && !isBelowDeliveryMin && totalAmount < freeDeliveryThreshold && (
           <View style={styles.freeDeliveryHintContainer}>
             <Ionicons name="information-circle" size={14} color="#F59E0B" />
             <Text style={styles.freeDeliveryHint}>
@@ -217,20 +298,22 @@ export default function CartScreen() {
         </View>
 
         <TouchableOpacity
-          style={[styles.checkoutButton, isSyncing && styles.checkoutButtonDisabled]}
-          onPress={() => router.push('/checkout/address')}
-          disabled={isSyncing}
+          style={[styles.checkoutButton, (isSyncing || !canCheckout) && styles.checkoutButtonDisabled]}
+          onPress={handleCheckout}
+          disabled={isSyncing || !canCheckout}
           activeOpacity={0.85}
           accessibilityLabel="Proceed to checkout"
           accessibilityRole="button"
         >
           <LinearGradient
-            colors={['#4CAF50', '#388E3C']}
+            colors={canCheckout ? ['#4CAF50', '#388E3C'] : ['#94A3B8', '#64748B']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.checkoutGradient}
           >
-            <Text style={styles.checkoutText}>Proceed to Checkout</Text>
+            <Text style={styles.checkoutText}>
+              {isBelowMinLimit ? 'Below Min Order Limit' : (fulfillmentMethod === 'delivery' && isBelowDeliveryMin ? 'Below Delivery Minimum' : 'Proceed to Checkout')}
+            </Text>
             <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
           </LinearGradient>
         </TouchableOpacity>
@@ -252,9 +335,17 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#F1F5F9',
   },
-  headerTitle: { fontSize: 22, fontWeight: '700', color: '#1E293B' },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  backButton: {
+    padding: 4,
+  },
+  headerTitle: { fontSize: 20, fontWeight: '700', color: '#1E293B' },
   clearText: { fontSize: 14, color: '#EF4444', fontWeight: '600' },
-  listContent: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 100 },
+  listContent: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 24 },
   cartItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -304,7 +395,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 20,
-    paddingBottom: 110,
+    paddingBottom: 36,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.06,
@@ -349,6 +440,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 40,
   },
+  emptyHeader: {
+    position: 'absolute',
+    top: 60,
+    left: 20,
+    right: 20,
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+  },
   emptyIconBg: {
     width: 100,
     height: 100,
@@ -378,4 +477,71 @@ const styles = StyleSheet.create({
     borderRadius: 14,
   },
   shopButtonText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
+  fulfillmentContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#F1F5F9',
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 16,
+    gap: 4,
+  },
+  fulfillmentTab: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 10,
+    gap: 6,
+    borderRadius: 8,
+  },
+  fulfillmentTabActive: {
+    backgroundColor: '#4CAF50',
+    shadowColor: '#4CAF50',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  fulfillmentText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+  fulfillmentTextActive: {
+    color: '#FFFFFF',
+  },
+  alertHintContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#FEF3C7',
+    padding: 10,
+    borderRadius: 10,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+  },
+  alertHintText: {
+    fontSize: 12,
+    color: '#D97706',
+    fontWeight: '600',
+    flex: 1,
+  },
+  alertHintRedContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#FEE2E2',
+    padding: 10,
+    borderRadius: 10,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+  },
+  alertHintRedText: {
+    fontSize: 12,
+    color: '#DC2626',
+    fontWeight: '600',
+    flex: 1,
+  },
 });

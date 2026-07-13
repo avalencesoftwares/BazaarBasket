@@ -11,17 +11,23 @@ import {
   TextInput,
   Alert,
   StatusBar,
+  ActivityIndicator,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/authStore';
+import { saveAddress } from '../../services/userService';
 import type { Address } from '@bazaarbasket/shared';
 import { LinearGradient } from 'expo-linear-gradient';
 
 export default function AddressScreen() {
   const userProfile = useAuthStore((s) => s.userProfile);
+  const fetchUserProfile = useAuthStore((s) => s.fetchUserProfile);
+  
   const [showForm, setShowForm] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+  
   const [formData, setFormData] = useState({
     label: '',
     fullName: '',
@@ -40,6 +46,54 @@ export default function AddressScreen() {
     setSelectedAddressId(address.id);
   }, []);
 
+  const handleSaveAddress = useCallback(async () => {
+    // Validation
+    if (!formData.label.trim()) return Alert.alert('Error', 'Please enter a label.');
+    if (!formData.fullName.trim()) return Alert.alert('Error', 'Please enter full name.');
+    if (!formData.phone.trim() || formData.phone.length !== 10) return Alert.alert('Error', 'Please enter a valid 10-digit phone number.');
+    if (!formData.addressLine1.trim()) return Alert.alert('Error', 'Please enter address line 1.');
+    if (!formData.city.trim()) return Alert.alert('Error', 'Please enter city.');
+    if (!formData.state.trim()) return Alert.alert('Error', 'Please enter state.');
+    if (!formData.pincode.trim() || formData.pincode.length !== 6) return Alert.alert('Error', 'Please enter a valid 6-digit pincode.');
+
+    setIsSaving(true);
+    try {
+      await saveAddress({
+        label: formData.label.trim(),
+        fullName: formData.fullName.trim(),
+        phone: formData.phone.trim(),
+        addressLine1: formData.addressLine1.trim(),
+        addressLine2: formData.addressLine2.trim(),
+        city: formData.city.trim(),
+        state: formData.state.trim(),
+        pincode: formData.pincode.trim(),
+        landmark: formData.landmark.trim(),
+      });
+
+      // Clear form
+      setFormData({
+        label: '',
+        fullName: '',
+        phone: '',
+        addressLine1: '',
+        addressLine2: '',
+        city: '',
+        state: '',
+        pincode: '',
+        landmark: '',
+      });
+      setShowForm(false);
+
+      // Refresh profiles
+      await fetchUserProfile();
+      Alert.alert('Success', 'Address saved successfully.');
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to save address.');
+    } finally {
+      setIsSaving(false);
+    }
+  }, [formData, fetchUserProfile]);
+
   const handleContinue = useCallback(() => {
     if (!selectedAddressId) {
       Alert.alert('Select Address', 'Please select a delivery address.');
@@ -54,17 +108,6 @@ export default function AddressScreen() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-
-      {/* Header */}
-      <View style={styles.headerBar}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} activeOpacity={0.7}>
-          <Ionicons name="arrow-back" size={20} color="#1E293B" />
-        </TouchableOpacity>
-        <View>
-          <Text style={styles.title}>Delivery Address</Text>
-          <Text style={styles.subtitle}>Choose where to deliver your order</Text>
-        </View>
-      </View>
 
       <ScrollView contentContainerStyle={styles.content}>
         {/* Saved Addresses */}
@@ -126,14 +169,30 @@ export default function AddressScreen() {
             <TextInput style={styles.input} placeholder="Phone Number" placeholderTextColor="#94A3B8" keyboardType="phone-pad" maxLength={10} value={formData.phone} onChangeText={(text) => setFormData({ ...formData, phone: text })} accessibilityLabel="Phone number" />
             <TextInput style={styles.input} placeholder="Address Line 1" placeholderTextColor="#94A3B8" value={formData.addressLine1} onChangeText={(text) => setFormData({ ...formData, addressLine1: text })} accessibilityLabel="Address line 1" />
             <TextInput style={styles.input} placeholder="Address Line 2 (Optional)" placeholderTextColor="#94A3B8" value={formData.addressLine2} onChangeText={(text) => setFormData({ ...formData, addressLine2: text })} accessibilityLabel="Address line 2" />
+            
             <View style={styles.row}>
               <TextInput style={[styles.input, styles.halfInput]} placeholder="City" placeholderTextColor="#94A3B8" value={formData.city} onChangeText={(text) => setFormData({ ...formData, city: text })} accessibilityLabel="City" />
-              <TextInput style={[styles.input, styles.halfInput]} placeholder="Pincode" placeholderTextColor="#94A3B8" keyboardType="number-pad" maxLength={6} value={formData.pincode} onChangeText={(text) => setFormData({ ...formData, pincode: text })} accessibilityLabel="Pincode" />
+              <TextInput style={[styles.input, styles.halfInput]} placeholder="State" placeholderTextColor="#94A3B8" value={formData.state} onChangeText={(text) => setFormData({ ...formData, state: text })} accessibilityLabel="State" />
             </View>
-            <TextInput style={styles.input} placeholder="Landmark (Optional)" placeholderTextColor="#94A3B8" value={formData.landmark} onChangeText={(text) => setFormData({ ...formData, landmark: text })} accessibilityLabel="Landmark" />
-            <TouchableOpacity style={styles.saveAddressButton} accessibilityLabel="Save address" activeOpacity={0.85}>
+
+            <View style={styles.row}>
+              <TextInput style={[styles.input, styles.halfInput]} placeholder="Pincode" placeholderTextColor="#94A3B8" keyboardType="number-pad" maxLength={6} value={formData.pincode} onChangeText={(text) => setFormData({ ...formData, pincode: text })} accessibilityLabel="Pincode" />
+              <TextInput style={[styles.input, styles.halfInput]} placeholder="Landmark (Optional)" placeholderTextColor="#94A3B8" value={formData.landmark} onChangeText={(text) => setFormData({ ...formData, landmark: text })} accessibilityLabel="Landmark" />
+            </View>
+
+            <TouchableOpacity 
+              style={styles.saveAddressButton} 
+              onPress={handleSaveAddress}
+              disabled={isSaving}
+              accessibilityLabel="Save address" 
+              activeOpacity={0.85}
+            >
               <LinearGradient colors={['#4CAF50', '#388E3C']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={styles.saveGradient}>
-                <Text style={styles.saveAddressText}>Save Address</Text>
+                {isSaving ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.saveAddressText}>Save Address</Text>
+                )}
               </LinearGradient>
             </TouchableOpacity>
           </View>
@@ -290,7 +349,7 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   saveGradient: { paddingVertical: 14, alignItems: 'center', borderRadius: 12 },
-  saveAddressText: { fontSize: 15, fontWeight: '700', color: '#000000' },
+  saveAddressText: { fontSize: 15, fontWeight: '700', color: '#FFFFFF' },
   bottomBar: {
     position: 'absolute',
     bottom: 0,

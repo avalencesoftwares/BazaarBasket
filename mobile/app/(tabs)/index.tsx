@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   StatusBar,
   Platform,
+  Alert,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,6 +21,7 @@ import { getStoreSettings } from '../../services/settingsService';
 import { formatCurrency } from '@bazaarbasket/shared';
 import type { Product, Category } from '@bazaarbasket/shared';
 import { useCartStore } from '../../store/cartStore';
+import { useWishlistStore } from '../../store/wishlistStore';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path } from 'react-native-svg';
 
@@ -36,105 +38,6 @@ const chunkArray = <T,>(arr: T[], size: number): T[][] => {
   return result;
 };
 
-// ─── Mock Categories for Redesign Carousel ───────────────────────────────────
-const MOCK_CATEGORIES: Category[] = [
-  {
-    id: 'sweets',
-    name: 'Sweets',
-    slug: 'sweets',
-    imageUrl: 'https://images.unsplash.com/photo-1587314168485-3236d6710814?q=80&w=250&auto=format&fit=crop',
-    imagePublicId: '',
-    productCount: 0,
-    isActive: true,
-    sortOrder: 1,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: 'health',
-    name: 'Health',
-    slug: 'health',
-    imageUrl: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?q=80&w=250&auto=format&fit=crop',
-    imagePublicId: '',
-    productCount: 0,
-    isActive: true,
-    sortOrder: 2,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: 'drink',
-    name: 'Drink',
-    slug: 'drink',
-    imageUrl: 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?q=80&w=250&auto=format&fit=crop',
-    imagePublicId: '',
-    productCount: 0,
-    isActive: true,
-    sortOrder: 3,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: 'frozen',
-    name: 'Frozen',
-    slug: 'frozen',
-    imageUrl: 'https://images.unsplash.com/photo-1549590143-d5855148a9d5?q=80&w=250&auto=format&fit=crop',
-    imagePublicId: '',
-    productCount: 0,
-    isActive: true,
-    sortOrder: 4,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: 'bakery',
-    name: 'Bakery',
-    slug: 'bakery',
-    imageUrl: 'https://images.unsplash.com/photo-1509440159596-0249088772ff?q=80&w=250&auto=format&fit=crop',
-    imagePublicId: '',
-    productCount: 0,
-    isActive: true,
-    sortOrder: 5,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: 'veggies',
-    name: 'Veggies',
-    slug: 'veggies',
-    imageUrl: 'https://images.unsplash.com/photo-1566385101042-1a0aa0c1268c?q=80&w=250&auto=format&fit=crop',
-    imagePublicId: '',
-    productCount: 0,
-    isActive: true,
-    sortOrder: 6,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: 'fruits',
-    name: 'Fruits',
-    slug: 'fruits',
-    imageUrl: 'https://images.unsplash.com/photo-1619546813926-a78fa6372cd2?q=80&w=250&auto=format&fit=crop',
-    imagePublicId: '',
-    productCount: 0,
-    isActive: true,
-    sortOrder: 7,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: 'dairy',
-    name: 'Dairy',
-    slug: 'dairy',
-    imageUrl: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?q=80&w=250&auto=format&fit=crop',
-    imagePublicId: '',
-    productCount: 0,
-    isActive: true,
-    sortOrder: 8,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-];
 
 // ─── Color Palette (matching screenshot green theme) ──────────────────────────
 const COLORS = {
@@ -189,10 +92,16 @@ function CategoryItem({ category }: { category: Category }) {
 
 // ─── Product Card (Recommended Style) ─────────────────────────────────────────
 function ProductCard({ product }: { product: Product }) {
-  const addItem = useCartStore((s) => s.addItem);
+  const { items, addItem, updateQuantity, removeItem } = useCartStore();
   const [isAdding, setIsAdding] = useState(false);
-  const [isWishlisted, setIsWishlisted] = useState(false);
+  
+  const wishlistIds = useWishlistStore((s) => s.wishlistIds);
+  const toggleWishlist = useWishlistStore((s) => s.toggleWishlist);
+  const isWishlisted = wishlistIds.includes(product.id);
   const isOutOfStock = product.stock <= 0;
+
+  const cartItem = items.find((i) => i.productId === product.id);
+  const quantityInCart = cartItem ? cartItem.quantity : 0;
 
   const handleAddToCart = useCallback(async () => {
     if (isOutOfStock) return;
@@ -206,9 +115,39 @@ function ProductCard({ product }: { product: Product }) {
     }
   }, [product.id, isOutOfStock, addItem]);
 
-  const toggleWishlist = useCallback(() => {
-    setIsWishlisted((prev) => !prev);
-  }, []);
+  const handleIncrement = useCallback(async () => {
+    if (quantityInCart >= product.stock) {
+      Alert.alert('Max Stock', `Only ${product.stock} units available.`);
+      return;
+    }
+    setIsAdding(true);
+    try {
+      await updateQuantity(product.id, quantityInCart + 1);
+    } catch {
+      // handled in store
+    } finally {
+      setIsAdding(false);
+    }
+  }, [product.id, product.stock, quantityInCart, updateQuantity]);
+
+  const handleDecrement = useCallback(async () => {
+    setIsAdding(true);
+    try {
+      if (quantityInCart <= 1) {
+        await removeItem(product.id);
+      } else {
+        await updateQuantity(product.id, quantityInCart - 1);
+      }
+    } catch {
+      // handled in store
+    } finally {
+      setIsAdding(false);
+    }
+  }, [product.id, quantityInCart, updateQuantity, removeItem]);
+
+  const handleToggleWishlist = useCallback(async () => {
+    await toggleWishlist(product.id);
+  }, [product.id, toggleWishlist]);
 
   return (
     <TouchableOpacity
@@ -236,7 +175,7 @@ function ProductCard({ product }: { product: Product }) {
         {/* Heart / Wishlist Icon */}
         <TouchableOpacity
           style={styles.heartButton}
-          onPress={toggleWishlist}
+          onPress={handleToggleWishlist}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           accessibilityLabel={isWishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
         >
@@ -260,10 +199,30 @@ function ProductCard({ product }: { product: Product }) {
         <View style={styles.priceRow}>
           <Text style={styles.productPrice}>{formatCurrency(product.price)}</Text>
 
-          {/* Circular Add Button */}
+          {/* Add / Stepper Button */}
           {isOutOfStock ? (
             <View style={styles.addButtonDisabled}>
               <Ionicons name="remove" size={18} color={COLORS.textMuted} />
+            </View>
+          ) : quantityInCart > 0 ? (
+            <View style={styles.cardStepper}>
+              <TouchableOpacity
+                style={styles.cardStepperBtn}
+                onPress={handleDecrement}
+                disabled={isAdding}
+                activeOpacity={0.7}
+              >
+                <Ionicons name={quantityInCart === 1 ? "trash-outline" : "remove"} size={14} color={COLORS.white} />
+              </TouchableOpacity>
+              <Text style={styles.cardStepperText}>{quantityInCart}</Text>
+              <TouchableOpacity
+                style={styles.cardStepperBtn}
+                onPress={handleIncrement}
+                disabled={isAdding || quantityInCart >= product.stock}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="add" size={14} color={COLORS.white} />
+              </TouchableOpacity>
             </View>
           ) : (
             <TouchableOpacity
@@ -293,6 +252,11 @@ export default function HomeScreen() {
   const [currentPage, setCurrentPage] = useState(0);
   const scrollViewRef = useRef<ScrollView>(null);
   const totalItems = useCartStore((s) => s.totalItems);
+  const loadWishlist = useWishlistStore((s) => s.loadWishlist);
+
+  useEffect(() => {
+    loadWishlist();
+  }, [loadWishlist]);
 
   const categoriesQuery = useQuery({
     queryKey: ['categories'],
@@ -324,7 +288,7 @@ export default function HomeScreen() {
 
   const categoriesToRender = categoriesQuery.data && categoriesQuery.data.length > 0
     ? categoriesQuery.data
-    : MOCK_CATEGORIES;
+    : [];
 
   useEffect(() => {
     const totalPages = Math.ceil(categoriesToRender.length / 4);
@@ -350,7 +314,10 @@ export default function HomeScreen() {
     }
   };
 
-  const storeAddress = settingsQuery.data?.storeAddress || 'New York, USA';
+  const storeAddress = settingsQuery.data?.storeAddress || '';
+  const bannerSettings = settingsQuery.data;
+  const hasBanner = !!(bannerSettings?.bannerTitle || bannerSettings?.bannerOffer);
+  const hasRibbon = !!bannerSettings?.ribbonLabel;
 
   return (
     <View style={styles.container}>
@@ -385,7 +352,7 @@ export default function HomeScreen() {
 
             <TouchableOpacity
               style={styles.cartButton}
-              onPress={() => router.push('/(tabs)/cart')}
+              onPress={() => router.push('/cart')}
               accessibilityLabel="Cart"
               accessibilityRole="button"
               activeOpacity={0.7}
@@ -451,6 +418,7 @@ export default function HomeScreen() {
         </View>
 
         {/* ─── Promotional Banner ────────────────────────────────────── */}
+        {hasBanner && (
         <View style={styles.bannerContainer}>
           <LinearGradient
             colors={['#58B25C', '#459D4A']}
@@ -460,13 +428,13 @@ export default function HomeScreen() {
           >
             <View style={styles.bannerLeft}>
               <Text style={styles.bannerLabel}>
-                {settingsQuery.data?.bannerTitle || 'New Year Offer'}
+                {bannerSettings?.bannerTitle || ''}
               </Text>
               <Text style={styles.bannerDiscount}>
-                {settingsQuery.data?.bannerOffer || '40% OFF'}
+                {bannerSettings?.bannerOffer || ''}
               </Text>
               <Text style={styles.bannerDate}>
-                {settingsQuery.data?.bannerSubtitle || '16-31 Dec'}
+                {bannerSettings?.bannerSubtitle || ''}
               </Text>
 
               <View style={styles.bannerButtonRow}>
@@ -491,6 +459,7 @@ export default function HomeScreen() {
             {/* Right side promotional image area */}
             <View style={styles.bannerRight}>
               {/* Custom SVG Ribbon Tag */}
+              {hasRibbon && (
               <View style={styles.ribbonContainer}>
                 <Svg width="54" height="70" viewBox="0 0 54 70">
                   <Path
@@ -501,25 +470,29 @@ export default function HomeScreen() {
                   />
                 </Svg>
                 <View style={styles.ribbonTextContainer}>
-                  <Text style={styles.ribbonLabel}>DISCOUNT</Text>
+                  <Text style={styles.ribbonLabel}>{bannerSettings?.ribbonLabel || ''}</Text>
                   <View style={styles.ribbonDivider} />
-                  <Text style={styles.ribbonPercent}>40%</Text>
+                  <Text style={styles.ribbonPercent}>{bannerSettings?.ribbonPercent || ''}</Text>
                   <Text style={styles.ribbonOff}>Off</Text>
                   <View style={styles.ribbonDivider} />
-                  <Text style={styles.ribbonAllProduct}>ALL PRODUCT</Text>
+                  <Text style={styles.ribbonAllProduct}>{bannerSettings?.ribbonSubLabel || ''}</Text>
                 </View>
               </View>
+              )}
 
-              {/* Woman Image Cutout */}
+              {/* Promotional Image */}
+              {bannerSettings?.bannerImageUrl ? (
               <Image
-                source={{ uri: 'https://images.unsplash.com/photo-1595853035070-59a39fe84de3?q=80&w=400' }}
+                source={{ uri: bannerSettings.bannerImageUrl }}
                 style={styles.bannerWomanImage}
                 contentFit="contain"
                 cachePolicy="disk"
               />
+              ) : null}
             </View>
           </LinearGradient>
         </View>
+        )}
 
         {/* ─── Recommended for You ───────────────────────────────────── */}
         <View style={styles.section}>
@@ -1011,6 +984,34 @@ const styles = StyleSheet.create({
     backgroundColor: '#E5E7EB',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  cardStepper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.primaryGreen,
+    borderRadius: 16,
+    height: 32,
+    paddingHorizontal: 4,
+    gap: 6,
+    shadowColor: COLORS.primaryGreen,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  cardStepperBtn: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cardStepperText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.white,
+    minWidth: 16,
+    textAlign: 'center',
   },
 
   // ── Misc ──────────────────────────────────────────────────────────────────

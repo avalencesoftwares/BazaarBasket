@@ -23,8 +23,8 @@ export const Sidebar: React.FC = () => {
 
   const navigationItems = [
     { name: 'Dashboard', path: '/', icon: LayoutDashboard },
-    { name: 'Products', path: '/products', icon: ShoppingBag },
     { name: 'Categories', path: '/categories', icon: FolderTree },
+    { name: 'Products', path: '/products', icon: ShoppingBag },
     { name: 'Orders', path: '/orders', icon: FileText },
     { name: 'Inventory', path: '/inventory', icon: Warehouse },
     { name: 'Settings', path: '/settings', icon: Settings },

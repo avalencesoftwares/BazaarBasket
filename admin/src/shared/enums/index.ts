@@ -36,10 +36,10 @@ export enum GSTSlab {
 
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   [OrderStatus.PENDING]: 'Pending',
-  [OrderStatus.CONFIRMED]: 'Confirmed',
-  [OrderStatus.PACKED]: 'Packed',
-  [OrderStatus.OUT_FOR_DELIVERY]: 'Out for Delivery',
-  [OrderStatus.DELIVERED]: 'Delivered',
+  [OrderStatus.CONFIRMED]: 'Completed',
+  [OrderStatus.PACKED]: 'Completed',
+  [OrderStatus.OUT_FOR_DELIVERY]: 'Completed',
+  [OrderStatus.DELIVERED]: 'Completed',
   [OrderStatus.CANCELLED]: 'Cancelled',
 };
 
@@ -61,9 +61,9 @@ export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
  */
 export const ORDER_STATUS_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   [OrderStatus.PENDING]: [OrderStatus.CONFIRMED, OrderStatus.CANCELLED],
-  [OrderStatus.CONFIRMED]: [OrderStatus.PACKED, OrderStatus.CANCELLED],
-  [OrderStatus.PACKED]: [OrderStatus.OUT_FOR_DELIVERY, OrderStatus.CANCELLED],
-  [OrderStatus.OUT_FOR_DELIVERY]: [OrderStatus.DELIVERED],
+  [OrderStatus.CONFIRMED]: [],
+  [OrderStatus.PACKED]: [],
+  [OrderStatus.OUT_FOR_DELIVERY]: [],
   [OrderStatus.DELIVERED]: [],
   [OrderStatus.CANCELLED]: [],
 };

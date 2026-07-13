@@ -1,7 +1,7 @@
 // packages/mobile/app/(auth)/verify-otp.tsx
-// OTP verification screen — Premium Light Theme
+// Redesigned premium verify OTP screen with 4-digit test code (1234) mapping to unique email/password accounts
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,17 +11,19 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
-  Alert,
   Animated,
   StatusBar,
+  Alert,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuthStore } from '../../store/authStore';
 import { logger } from '../../utils/logger';
 import { LinearGradient } from 'expo-linear-gradient';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '../../services/firebase';
+import { setTempPhone } from '../../services/authHelper';
 
-const OTP_LENGTH = 6;
+const OTP_LENGTH = 4;
 
 export default function VerifyOTPScreen() {
   const { phone } = useLocalSearchParams<{ phone: string }>();
@@ -29,7 +31,6 @@ export default function VerifyOTPScreen() {
   const [isVerifying, setIsVerifying] = useState(false);
   const [resendTimer, setResendTimer] = useState(30);
   const inputRefs = useRef<(TextInput | null)[]>([]);
-  const setDevUser = useAuthStore((s) => s.setDevUser);
 
   // Animations
   const headerOpacity = useRef(new Animated.Value(0)).current;
@@ -82,28 +83,44 @@ export default function VerifyOTPScreen() {
     async (otpCode: string) => {
       setIsVerifying(true);
       try {
-        // Dev bypass: OTP "1234" works in development mode
-        if (__DEV__ && otpCode.startsWith('1234')) {
-          logger.info('Dev OTP bypass activated', { phone });
-          setDevUser(phone);
+        if (otpCode === '1234') {
+          logger.info('OTP login bypass activated', { phone });
+          setTempPhone(phone);
+
+          // Construct unique email identifier based on clean phone number format
+          const cleanedPhone = phone.replace(/[^a-zA-Z0-9]/g, '');
+          const email = `phone_${cleanedPhone}@bazaarbasket.local`;
+          const password = 'test_otp_password';
+
+          try {
+            await signInWithEmailAndPassword(auth, email, password);
+          } catch (signInErr: any) {
+            if (signInErr.code === 'auth/user-not-found' || signInErr.code === 'auth/invalid-credential') {
+              // Register new unique user if they don't exist in Firebase yet
+              await createUserWithEmailAndPassword(auth, email, password);
+            } else {
+              throw signInErr;
+            }
+          }
+
           router.replace('/(tabs)');
           return;
         }
 
-        // In production, this would call verifyOTP from authService
-        logger.info('Verifying OTP', { phone, otpLength: String(otpCode.length) });
-        // Navigate to main app on success
-        router.replace('/(tabs)');
-      } catch (error) {
+        // For testing purpose, display verification failure on invalid codes
+        Alert.alert('Verification Failed', 'Invalid OTP. For testing, please use 1234.');
+        setOtp(Array(OTP_LENGTH).fill(''));
+        inputRefs.current[0]?.focus();
+      } catch (error: any) {
         logger.error('OTP verification failed', error);
-        Alert.alert('Verification Failed', 'Invalid OTP. Please try again.');
+        Alert.alert('Verification Failed', error.message || 'Failed to authenticate. Please try again.');
         setOtp(Array(OTP_LENGTH).fill(''));
         inputRefs.current[0]?.focus();
       } finally {
         setIsVerifying(false);
       }
     },
-    [phone, setDevUser],
+    [phone],
   );
 
   const handleOtpChange = useCallback(
@@ -142,7 +159,6 @@ export default function VerifyOTPScreen() {
       return;
     }
     setResendTimer(30);
-    // Resend OTP logic
     logger.info('Resending OTP', { phone });
     Alert.alert('OTP Sent', `A new OTP has been sent to ${phone}`);
   }, [resendTimer, phone]);
@@ -188,12 +204,12 @@ export default function VerifyOTPScreen() {
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
           >
-            <Ionicons name="shield-checkmark" size={32} color="#000000" />
+            <Ionicons name="shield-checkmark" size={32} color="#FFFFFF" />
           </LinearGradient>
         </View>
-        <Text style={styles.title}>Verify OTP</Text>
+        <Text style={styles.title}>Verify Phone</Text>
         <Text style={styles.subtitle}>
-          Enter the 6-digit code sent to{'\n'}
+          We sent a verification code to{'\n'}
           <Text style={styles.phoneHighlight}>{phone}</Text>
         </Text>
       </Animated.View>
@@ -324,7 +340,7 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   otpInput: {
-    width: 48,
+    width: 58,
     height: 58,
     borderRadius: 14,
     backgroundColor: '#F8FAFC',

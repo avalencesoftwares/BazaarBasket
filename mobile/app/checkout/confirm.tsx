@@ -44,10 +44,24 @@ export default function ConfirmOrderScreen() {
   const freeDeliveryThreshold = settings?.freeDeliveryThreshold ?? DELIVERY_CONFIG.FREE_DELIVERY_THRESHOLD;
   const standardDeliveryFee = settings?.deliveryFee ?? DELIVERY_CONFIG.DELIVERY_FEE;
 
-  const deliveryFee = totalAmount >= freeDeliveryThreshold ? 0 : standardDeliveryFee;
+  const isPickup = params.addressId === 'pickup';
+  const deliveryFee = isPickup ? 0 : (totalAmount >= freeDeliveryThreshold ? 0 : standardDeliveryFee);
   const grandTotal = totalAmount + deliveryFee;
 
-  const selectedAddress = userProfile?.addresses.find((a) => a.id === params.addressId);
+  const selectedAddress = isPickup
+    ? {
+        id: 'pickup',
+        label: 'Store Pickup',
+        fullName: userProfile?.displayName || 'Customer',
+        phone: userProfile?.phone || '',
+        addressLine1: settings?.storeAddress || 'Store Outlet',
+        addressLine2: 'Please pick up your order directly from the store location.',
+        city: settings?.storeName || 'BazaarBasket Store',
+        state: '',
+        pincode: '',
+        landmark: '',
+      }
+    : userProfile?.addresses.find((a) => a.id === params.addressId);
 
   const handlePlaceOrder = useCallback(async () => {
     if (!selectedAddress) {
@@ -66,17 +80,17 @@ export default function ConfirmOrderScreen() {
           fullName: selectedAddress.fullName,
           phone: selectedAddress.phone,
           addressLine1: selectedAddress.addressLine1,
-          addressLine2: selectedAddress.addressLine2,
+          addressLine2: selectedAddress.addressLine2 || '',
           city: selectedAddress.city,
-          state: selectedAddress.state,
-          pincode: selectedAddress.pincode,
-          landmark: selectedAddress.landmark,
+          state: selectedAddress.state || '',
+          pincode: selectedAddress.pincode || '',
+          landmark: selectedAddress.landmark || '',
         },
         deliverySlot: {
-          date: params.slotDate,
-          startTime: params.slotStartTime,
-          endTime: params.slotEndTime,
-          label: params.slotLabel,
+          date: params.slotDate || new Date().toISOString().split('T')[0],
+          startTime: params.slotStartTime || '',
+          endTime: params.slotEndTime || '',
+          label: params.slotLabel || 'Self Pickup',
         },
         paymentMethod: PaymentMethod.CASH_ON_DELIVERY,
         notes: '',
@@ -90,7 +104,14 @@ export default function ConfirmOrderScreen() {
         },
       ]);
     } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : 'Failed to place order.';
+      let message = 'Failed to place order. Please try again.';
+      if (error instanceof Error) {
+        if (error.message.includes('permission-denied') || error.message.includes('permission') || error.message.includes('Permission')) {
+          message = 'Permission denied. Please ensure you are logged in and your connection is secure, or update your Firestore security rules.';
+        } else {
+          message = error.message;
+        }
+      }
       Alert.alert('Order Failed', message);
     } finally {
       setIsPlacing(false);
@@ -100,17 +121,6 @@ export default function ConfirmOrderScreen() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-
-      {/* Header */}
-      <View style={styles.headerBar}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} activeOpacity={0.7}>
-          <Ionicons name="arrow-back" size={20} color="#1E293B" />
-        </TouchableOpacity>
-        <View>
-          <Text style={styles.title}>Confirm Order</Text>
-          <Text style={styles.subtitle}>Review your order before placing</Text>
-        </View>
-      </View>
 
       <ScrollView contentContainerStyle={styles.content}>
         {/* Delivery Address */}

@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
   Dimensions,
   StatusBar,
+  Alert,
 } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -35,7 +36,8 @@ export default function SearchScreen() {
   const [recentSearches, setRecentSearches] = useState<string[]>([]);
   const [isFocused, setIsFocused] = useState(false);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const addItem = useCartStore((s) => s.addItem);
+  
+  const { items, addItem, updateQuantity, removeItem } = useCartStore();
 
   // Load recent searches
   useEffect(() => {
@@ -92,9 +94,36 @@ export default function SearchScreen() {
     }
   }, [addItem]);
 
+  const handleIncrement = useCallback(async (product: Product, quantityInCart: number) => {
+    if (quantityInCart >= product.stock) {
+      Alert.alert('Max Stock', `Only ${product.stock} units available.`);
+      return;
+    }
+    try {
+      await updateQuantity(product.id, quantityInCart + 1);
+    } catch {
+      // handled in store
+    }
+  }, [updateQuantity]);
+
+  const handleDecrement = useCallback(async (product: Product, quantityInCart: number) => {
+    try {
+      if (quantityInCart <= 1) {
+        await removeItem(product.id);
+      } else {
+        await updateQuantity(product.id, quantityInCart - 1);
+      }
+    } catch {
+      // handled in store
+    }
+  }, [updateQuantity, removeItem]);
+
   const renderProduct = useCallback(({ item }: { item: Product }) => {
     const discount = calculateDiscount(item.mrp, item.price);
     const isOutOfStock = item.stock <= 0;
+
+    const cartItem = items.find((i) => i.productId === item.id);
+    const quantityInCart = cartItem ? cartItem.quantity : 0;
 
     return (
       <TouchableOpacity
@@ -125,19 +154,40 @@ export default function SearchScreen() {
             {item.mrp > item.price && <Text style={styles.productMrp}>{formatCurrency(item.mrp)}</Text>}
           </View>
           {!isOutOfStock && (
-            <TouchableOpacity
-              style={styles.addButton}
-              onPress={() => handleAddToCart(item.id)}
-              activeOpacity={0.8}
-              accessibilityLabel={`Add ${item.name}`}
-            >
-              <Text style={styles.addButtonText}>ADD</Text>
-            </TouchableOpacity>
+            quantityInCart > 0 ? (
+              <View style={styles.searchCardStepper}>
+                <TouchableOpacity
+                  style={styles.searchStepperBtn}
+                  onPress={() => handleDecrement(item, quantityInCart)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name={quantityInCart === 1 ? "trash-outline" : "remove"} size={14} color="#FFFFFF" />
+                </TouchableOpacity>
+                <Text style={styles.searchStepperText}>{quantityInCart}</Text>
+                <TouchableOpacity
+                  style={styles.searchStepperBtn}
+                  onPress={() => handleIncrement(item, quantityInCart)}
+                  disabled={quantityInCart >= item.stock}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="add" size={14} color="#FFFFFF" />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity
+                style={styles.addButton}
+                onPress={() => handleAddToCart(item.id)}
+                activeOpacity={0.8}
+                accessibilityLabel={`Add ${item.name}`}
+              >
+                <Text style={styles.addButtonText}>ADD</Text>
+              </TouchableOpacity>
+            )
           )}
         </View>
       </TouchableOpacity>
     );
-  }, [handleAddToCart]);
+  }, [items, handleAddToCart, handleIncrement, handleDecrement]);
 
   return (
     <View style={styles.container}>
@@ -176,6 +226,7 @@ export default function SearchScreen() {
           keyExtractor={(item) => item.id}
           horizontal
           showsHorizontalScrollIndicator={false}
+          style={styles.chipList}
           contentContainerStyle={styles.chipContainer}
           renderItem={({ item }) => (
             <TouchableOpacity
@@ -184,6 +235,18 @@ export default function SearchScreen() {
               accessibilityLabel={`Filter by ${item.name}`}
               activeOpacity={0.7}
             >
+              {item.imageUrl ? (
+                <Image
+                  source={{ uri: item.imageUrl }}
+                  style={styles.chipImage}
+                  contentFit="cover"
+                  cachePolicy="disk"
+                />
+              ) : (
+                <View style={[styles.chipImage, styles.chipPlaceholder]}>
+                  <Ionicons name="grid" size={12} color="#94A3B8" />
+                </View>
+              )}
               <Text style={[styles.chipText, categoryId === item.id && styles.chipTextActive]}>{item.name}</Text>
             </TouchableOpacity>
           )}
@@ -270,11 +333,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   chipContainer: { paddingHorizontal: 16, gap: 8, marginBottom: 12 },
+  chipList: {
+    flexGrow: 0,
+  },
   chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    paddingHorizontal: 18,
-    paddingVertical: 9,
+    borderRadius: 24,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderWidth: 1.5,
     borderColor: '#E2E8F0',
     shadowColor: '#000',
@@ -282,8 +350,20 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.03,
     shadowRadius: 4,
     elevation: 1,
+    gap: 8,
   },
   chipActive: { backgroundColor: '#E8F5E9', borderColor: '#4CAF50' },
+  chipImage: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  chipPlaceholder: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F1F5F9',
+  },
   chipText: { fontSize: 13, color: '#475569', fontWeight: '600' },
   chipTextActive: { color: '#000000' },
   recentSection: { paddingHorizontal: 20, marginBottom: 16 },
@@ -343,7 +423,34 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 3,
   },
-  addButtonText: { fontSize: 13, fontWeight: '700', color: '#000000', letterSpacing: 1 },
+  addButtonText: { fontSize: 13, fontWeight: '700', color: '#FFFFFF', letterSpacing: 1 },
+  searchCardStepper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#4CAF50',
+    borderRadius: 10,
+    height: 34,
+    paddingHorizontal: 4,
+    shadowColor: '#4CAF50',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  searchStepperBtn: {
+    width: 28,
+    height: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  searchStepperText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    minWidth: 16,
+    textAlign: 'center',
+  },
   emptyContainer: { alignItems: 'center', paddingVertical: 60 },
   emptyIconBg: {
     width: 80,

@@ -18,9 +18,6 @@ import { formatCurrency, formatDateTime, ORDER_STATUS_LABELS, OrderStatus } from
 const STATUS_STEPS = [
   OrderStatus.PENDING,
   OrderStatus.CONFIRMED,
-  OrderStatus.PACKED,
-  OrderStatus.OUT_FOR_DELIVERY,
-  OrderStatus.DELIVERED,
 ];
 
 function OrderStatusStepper({ currentStatus }: { currentStatus: OrderStatus }) {

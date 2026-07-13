@@ -75,9 +75,13 @@ export default function RootLayout() {
           <Stack.Screen
             name="product/[id]"
             options={{
-              headerShown: true,
-              title: 'Product Details',
-              headerBackTitle: 'Back',
+              headerShown: false,
+            }}
+          />
+          <Stack.Screen
+            name="cart"
+            options={{
+              headerShown: false,
             }}
           />
           <Stack.Screen

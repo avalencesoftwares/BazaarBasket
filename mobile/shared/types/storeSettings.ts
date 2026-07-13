@@ -20,12 +20,22 @@ export interface StoreSettings {
   deliveryFee: number;
   freeDeliveryThreshold: number;
   minOrderAmount: number;
+  minOrderLimit: number;
   deliverySlots: StoreSettingsDeliverySlot[];
 
   // Banner configuration (home screen)
   bannerTitle: string;
   bannerSubtitle: string;
   bannerOffer: string;
+
+  // Banner promotional image
+  bannerImageUrl: string;
+  bannerImagePublicId: string;
+
+  // Ribbon tag configuration
+  ribbonLabel: string;
+  ribbonPercent: string;
+  ribbonSubLabel: string;
 
   // Timestamps
   updatedAt?: Date;

@@ -94,6 +94,31 @@ async function uploadToCloudinaryClient(
   };
 }
 
+// ──── Banner Image Upload Helper ────
+
+export async function uploadBannerImage(
+  file: File,
+): Promise<{ url: string; publicId: string }> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const base64 = reader.result as string;
+        const result = await uploadToCloudinaryClient(
+          base64,
+          'bazaarbasket/banners',
+          `banner_${Date.now()}_${file.name}`,
+        );
+        resolve({ url: result.url, publicId: result.publicId });
+      } catch (err) {
+        reject(err);
+      }
+    };
+    reader.onerror = () => reject(new Error('Failed to read file'));
+    reader.readAsDataURL(file);
+  });
+}
+
 // ──── Products ────
 
 export async function createProduct(input: CreateProductInput): Promise<{ productId: string }> {
@@ -375,12 +400,16 @@ export async function deleteCategory(categoryId: string): Promise<void> {
     throw new Error('Category not found');
   }
 
-  const category = categorySnap.data() as Category;
+  // Query products collection directly to check for any active products under this category
+  const q = query(
+    collection(db, COLLECTIONS.PRODUCTS),
+    where('categoryId', '==', categoryId),
+    limit(1),
+  );
+  const productsSnap = await getDocs(q);
 
-  if (category.productCount > 0) {
-    throw new Error(
-      `Cannot delete category with ${category.productCount} product(s). Move or delete them first.`,
-    );
+  if (!productsSnap.empty) {
+    throw new Error('Cannot delete category with active products. Move or delete them first.');
   }
 
   await deleteDoc(categoryRef);
@@ -545,17 +574,23 @@ export async function getDashboardStats(): Promise<{
 const STORE_CONFIG_DOC = 'storeConfig';
 
 const DEFAULT_STORE_SETTINGS: StoreSettings = {
-  storeName: 'BazaarBasket Kirana',
-  storePhone: '+91 9876543210',
-  storeEmail: 'support@bazaarbasket.com',
-  storeAddress: '12, MG Road, Bengaluru, Karnataka - 560001',
+  storeName: '',
+  storePhone: '',
+  storeEmail: '',
+  storeAddress: '',
   deliveryFee: DELIVERY_CONFIG.DELIVERY_FEE,
   freeDeliveryThreshold: DELIVERY_CONFIG.FREE_DELIVERY_THRESHOLD,
   minOrderAmount: DELIVERY_CONFIG.MIN_ORDER_AMOUNT,
+  minOrderLimit: 0,
   deliverySlots: DEFAULT_DELIVERY_SLOTS.map((slot) => ({ ...slot, active: true })),
-  bannerTitle: 'Fresh Groceries',
-  bannerSubtitle: 'Delivered in minutes',
-  bannerOffer: 'Free delivery on orders above ₹499',
+  bannerTitle: '',
+  bannerSubtitle: '',
+  bannerOffer: '',
+  bannerImageUrl: '',
+  bannerImagePublicId: '',
+  ribbonLabel: '',
+  ribbonPercent: '',
+  ribbonSubLabel: '',
 };
 
 export async function getStoreSettings(): Promise<StoreSettings> {
