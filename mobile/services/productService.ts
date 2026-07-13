@@ -133,16 +133,17 @@ export async function searchProducts(
 export async function getCategories(): Promise<Category[]> {
   const q = query(
     collection(db, COLLECTIONS.CATEGORIES),
-    where('isActive', '==', true),
     orderBy('sortOrder', 'asc'),
   );
 
   const snapshot = await getDocs(q);
 
-  return snapshot.docs.map((docSnap) => ({
+  const categories = snapshot.docs.map((docSnap) => ({
     id: docSnap.id,
     ...docSnap.data(),
     createdAt: docSnap.data().createdAt?.toDate?.() || new Date(),
     updatedAt: docSnap.data().updatedAt?.toDate?.() || new Date(),
   })) as Category[];
+
+  return categories.filter((category) => category.isActive === true);
 }

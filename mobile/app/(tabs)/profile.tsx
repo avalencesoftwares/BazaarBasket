@@ -1,7 +1,7 @@
 // packages/mobile/app/(tabs)/profile.tsx
 // Profile screen with user info, addresses, and order history — Premium Light Theme
 
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -10,12 +10,15 @@ import {
   ScrollView,
   Alert,
   StatusBar,
+  TextInput,
+  ActivityIndicator,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuthStore } from '../../store/authStore';
 import { signOut } from '../../services/authService';
+import { updateUserProfile } from '../../services/userService';
 import { LinearGradient } from 'expo-linear-gradient';
 
 interface MenuItem {
@@ -29,6 +32,11 @@ interface MenuItem {
 
 export default function ProfileScreen() {
   const { userProfile, isAuthenticated, firebaseUser } = useAuthStore();
+  const fetchUserProfile = useAuthStore((s) => s.fetchUserProfile);
+
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState('');
+  const [isUpdating, setIsUpdating] = useState(false);
 
   const handleSignOut = useCallback(() => {
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
@@ -48,6 +56,24 @@ export default function ProfileScreen() {
       },
     ]);
   }, []);
+
+  const handleSaveName = useCallback(async () => {
+    if (!nameInput.trim()) {
+      Alert.alert('Error', 'Display name cannot be empty.');
+      return;
+    }
+    setIsUpdating(true);
+    try {
+      await updateUserProfile({ displayName: nameInput.trim() });
+      await fetchUserProfile();
+      setIsEditingName(false);
+      Alert.alert('Success', 'Profile name updated successfully.');
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to update profile name.');
+    } finally {
+      setIsUpdating(false);
+    }
+  }, [nameInput, fetchUserProfile]);
 
   if (!isAuthenticated) {
     return (
@@ -75,7 +101,6 @@ export default function ProfileScreen() {
   const menuItems: MenuItem[] = [
     { icon: 'receipt-outline', label: 'My Orders', subtitle: 'Track and manage orders', onPress: () => router.push('/order/history'), color: '#3B82F6', bgColor: '#EFF6FF' },
     { icon: 'location-outline', label: 'Saved Addresses', subtitle: 'Manage delivery addresses', onPress: () => router.push('/checkout/address'), color: '#4CAF50', bgColor: '#E8F5E9' },
-    { icon: 'notifications-outline', label: 'Notifications', subtitle: 'Alerts and updates', onPress: () => Alert.alert('Coming Soon'), color: '#8B5CF6', bgColor: '#F5F3FF' },
     { icon: 'help-circle-outline', label: 'Help & Support', subtitle: 'FAQ and contact us', onPress: () => Alert.alert('Coming Soon'), color: '#06B6D4', bgColor: '#ECFEFF' },
     { icon: 'information-circle-outline', label: 'About BazaarBasket', subtitle: 'Version 1.0.0', onPress: () => Alert.alert('BazaarBasket v1.0.0'), color: '#64748B', bgColor: '#F8FAFC' },
   ];
@@ -94,13 +119,24 @@ export default function ProfileScreen() {
         />
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>
-            {(userProfile?.displayName || firebaseUser?.displayName || '?')[0].toUpperCase()}
+            {(userProfile?.displayName || firebaseUser?.displayName || 'U')[0].toUpperCase()}
           </Text>
         </View>
         <View style={styles.profileInfo}>
-          <Text style={styles.profileName}>
-            {userProfile?.displayName || firebaseUser?.displayName || 'User'}
-          </Text>
+          {isEditingName ? (
+            <TextInput
+              style={styles.nameInput}
+              value={nameInput}
+              onChangeText={setNameInput}
+              maxLength={30}
+              autoFocus
+              accessibilityLabel="Edit display name"
+            />
+          ) : (
+            <Text style={styles.profileName}>
+              {userProfile?.displayName || firebaseUser?.displayName || 'User'}
+            </Text>
+          )}
           <Text style={styles.profilePhone}>
             {userProfile?.phone || firebaseUser?.phoneNumber || ''}
           </Text>
@@ -108,14 +144,40 @@ export default function ProfileScreen() {
             <Text style={styles.profileEmail}>{userProfile.email}</Text>
           ) : null}
         </View>
-        <TouchableOpacity
-          style={styles.editButton}
-          accessibilityLabel="Edit profile"
-          accessibilityRole="button"
-          activeOpacity={0.7}
-        >
-          <Ionicons name="pencil" size={16} color="#4CAF50" />
-        </TouchableOpacity>
+
+        {isUpdating ? (
+          <ActivityIndicator size="small" color="#4CAF50" />
+        ) : isEditingName ? (
+          <View style={styles.editActions}>
+            <TouchableOpacity
+              onPress={handleSaveName}
+              style={styles.editActionBtn}
+              accessibilityLabel="Save name"
+            >
+              <Ionicons name="checkmark-circle" size={24} color="#4CAF50" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => setIsEditingName(false)}
+              style={styles.editActionBtn}
+              accessibilityLabel="Cancel editing"
+            >
+              <Ionicons name="close-circle" size={24} color="#EF4444" />
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <TouchableOpacity
+            style={styles.editButton}
+            onPress={() => {
+              setNameInput(userProfile?.displayName || firebaseUser?.displayName || '');
+              setIsEditingName(true);
+            }}
+            accessibilityLabel="Edit profile"
+            accessibilityRole="button"
+            activeOpacity={0.7}
+          >
+            <Ionicons name="pencil" size={16} color="#4CAF50" />
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Menu Items */}
@@ -206,6 +268,15 @@ const styles = StyleSheet.create({
   profileName: { fontSize: 18, fontWeight: '700', color: '#000000', marginBottom: 3 },
   profilePhone: { fontSize: 14, color: '#64748B' },
   profileEmail: { fontSize: 13, color: '#94A3B8', marginTop: 2 },
+  nameInput: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#000000',
+    borderBottomWidth: 1.5,
+    borderBottomColor: '#4CAF50',
+    paddingVertical: 2,
+    marginBottom: 4,
+  },
   editButton: {
     width: 40,
     height: 40,
@@ -215,6 +286,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1.5,
     borderColor: '#E2E8F0',
+  },
+  editActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  editActionBtn: {
+    padding: 4,
   },
   menuContainer: {
     marginHorizontal: 20,
@@ -296,5 +375,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
     borderRadius: 14,
   },
-  signInButtonText: { fontSize: 16, fontWeight: '700', color: '#000000' },
+  signInButtonText: { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
 });

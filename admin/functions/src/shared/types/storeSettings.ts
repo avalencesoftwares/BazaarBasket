@@ -20,6 +20,7 @@ export interface StoreSettings {
   deliveryFee: number;
   freeDeliveryThreshold: number;
   minOrderAmount: number;
+  minOrderLimit: number;
   deliverySlots: StoreSettingsDeliverySlot[];
 
   // Banner configuration (home screen)

@@ -1,9 +1,9 @@
 // packages/mobile/store/authStore.ts
-// Authentication state management using Zustand
+// Authentication state management using Zustand with Firestore sync
 
 import { create } from 'zustand';
 import type { User as FirebaseUser } from 'firebase/auth';
-import { UserRole, type User } from '@bazaarbasket/shared';
+import type { User } from '@bazaarbasket/shared';
 import { onAuthChange } from '../services/authService';
 import { getUserProfile } from '../services/userService';
 import { logger } from '../utils/logger';
@@ -18,7 +18,6 @@ interface AuthState {
   setFirebaseUser: (user: FirebaseUser | null) => void;
   fetchUserProfile: () => Promise<void>;
   clearAuth: () => void;
-  setDevUser: (phone: string) => void;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -77,29 +76,5 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       isAuthenticated: false,
       isAdmin: false,
     });
-  },
-
-  setDevUser: (phone: string) => {
-    const devProfile: User = {
-      uid: 'dev-user-001',
-      phone,
-      displayName: 'Dev User',
-      email: 'dev@bazaarbasket.local',
-      role: UserRole.CUSTOMER,
-      photoUrl: '',
-      fcmTokens: [],
-      addresses: [],
-      isActive: true,
-      lastLoginAt: new Date(),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    set({
-      userProfile: devProfile,
-      isAuthenticated: true,
-      isLoading: false,
-      isAdmin: false,
-    });
-    logger.info('Dev user set', { phone });
   },
 }));

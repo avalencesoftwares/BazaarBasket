@@ -63,17 +63,6 @@ export default function SlotPickerScreen() {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
-      {/* Header */}
-      <View style={styles.headerBar}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} activeOpacity={0.7}>
-          <Ionicons name="arrow-back" size={20} color="#1E293B" />
-        </TouchableOpacity>
-        <View>
-          <Text style={styles.title}>Choose Delivery Slot</Text>
-          <Text style={styles.subtitle}>When would you like your order delivered?</Text>
-        </View>
-      </View>
-
       <ScrollView contentContainerStyle={styles.content}>
         {/* Date Picker */}
         <View style={styles.sectionTitleRow}>

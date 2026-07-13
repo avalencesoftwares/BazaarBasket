@@ -343,7 +343,7 @@ export const Inventory: React.FC = () => {
                         <button
                           onClick={() => handleSaveStock(product.id, product.stock)}
                           disabled={!isDeltaActive || loadingProductId === product.id}
-                          className="bg-primary disabled:bg-secondary disabled:text-muted-foreground text-primary-foreground font-semibold px-4.5 py-2 rounded-xl text-xs flex items-center gap-1 shadow-sm active:scale-[0.98] disabled:scale-100 disabled:opacity-40 transition-all duration-150 inline-flex"
+                          className="bg-primary disabled:bg-secondary disabled:text-muted-foreground text-primary-foreground font-semibold px-4 py-2 rounded-xl text-xs flex items-center gap-1 shadow-sm active:scale-[0.98] disabled:scale-100 disabled:opacity-40 transition-all duration-150 inline-flex"
                         >
                           {loadingProductId === product.id ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />

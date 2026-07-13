@@ -151,10 +151,16 @@ export const deleteCategory = onCall(
     const category = categorySnap.data() as Category;
 
     // Check if category has products
-    if (category.productCount > 0) {
+    const productsSnap = await db
+      .collection(COLLECTIONS.PRODUCTS)
+      .where('categoryId', '==', categoryId)
+      .limit(1)
+      .get();
+
+    if (!productsSnap.empty) {
       throw new HttpsError(
         'failed-precondition',
-        `Cannot delete category with ${category.productCount} product(s). Move or delete them first.`,
+        'Cannot delete category with active products. Move or delete them first.',
       );
     }
 

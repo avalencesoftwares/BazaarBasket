@@ -7,8 +7,6 @@ import {
   FileText,
   Clock,
   CheckCircle,
-  Truck,
-  Package,
   XCircle,
   Eye,
   X,
@@ -35,17 +33,17 @@ import type { Order } from '@bazaarbasket/shared';
 const STATUS_ICONS: Record<OrderStatus, any> = {
   [OrderStatus.PENDING]: Clock,
   [OrderStatus.CONFIRMED]: CheckCircle,
-  [OrderStatus.PACKED]: Package,
-  [OrderStatus.OUT_FOR_DELIVERY]: Truck,
+  [OrderStatus.PACKED]: CheckCircle,
+  [OrderStatus.OUT_FOR_DELIVERY]: CheckCircle,
   [OrderStatus.DELIVERED]: CheckCircle,
   [OrderStatus.CANCELLED]: XCircle,
 };
 
 const STATUS_CLASSES: Record<OrderStatus, string> = {
   [OrderStatus.PENDING]: 'bg-amber-50 text-amber-700 border-amber-200/60',
-  [OrderStatus.CONFIRMED]: 'bg-blue-50 text-blue-700 border-blue-200/60',
-  [OrderStatus.PACKED]: 'bg-purple-50 text-purple-700 border-purple-200/60',
-  [OrderStatus.OUT_FOR_DELIVERY]: 'bg-indigo-50 text-indigo-700 border-indigo-200/60',
+  [OrderStatus.CONFIRMED]: 'bg-emerald-50 text-emerald-700 border-emerald-200/60',
+  [OrderStatus.PACKED]: 'bg-emerald-50 text-emerald-700 border-emerald-200/60',
+  [OrderStatus.OUT_FOR_DELIVERY]: 'bg-emerald-50 text-emerald-700 border-emerald-200/60',
   [OrderStatus.DELIVERED]: 'bg-emerald-50 text-emerald-700 border-emerald-200/60',
   [OrderStatus.CANCELLED]: 'bg-rose-50 text-rose-700 border-rose-200/60',
 };
@@ -142,11 +140,7 @@ export const Orders: React.FC = () => {
   const filterTabs = [
     { key: '', label: 'All Orders' },
     { key: OrderStatus.PENDING, label: 'Pending' },
-    { key: OrderStatus.CONFIRMED, label: 'Confirmed' },
-    { key: OrderStatus.PACKED, label: 'Packed' },
-    { key: OrderStatus.OUT_FOR_DELIVERY, label: 'Out for Delivery' },
-    { key: OrderStatus.DELIVERED, label: 'Delivered' },
-    { key: OrderStatus.CANCELLED, label: 'Cancelled' },
+    { key: OrderStatus.CONFIRMED, label: 'Completed' },
   ];
 
   return (
@@ -160,12 +154,12 @@ export const Orders: React.FC = () => {
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex gap-1 overflow-x-auto pb-2 border-b border-border">
+      <div className="flex gap-3 overflow-x-auto pb-2 border-b border-border">
         {filterTabs.map((tab) => (
           <button
             key={tab.key}
             onClick={() => handleStatusFilterChange(tab.key)}
-            className={`px-4.5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 border whitespace-nowrap ${
+            className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 border whitespace-nowrap ${
               selectedStatusFilter === tab.key
                 ? 'bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/20'
                 : 'bg-gray-100 border-transparent text-muted-foreground hover:bg-gray-200/50 hover:text-foreground'
@@ -351,7 +345,7 @@ export const Orders: React.FC = () => {
                           key={next}
                           onClick={() => handleUpdateStatus(next)}
                           disabled={updatingStatus}
-                          className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-4.5 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-sm active:scale-[0.98] disabled:opacity-50 transition-all duration-150"
+                          className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-sm active:scale-[0.98] disabled:opacity-50 transition-all duration-150"
                         >
                           {updatingStatus ? (
                             <Loader2 className="w-3.5 h-3.5 animate-spin" />
