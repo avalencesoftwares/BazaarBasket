@@ -9,7 +9,6 @@ module.exports = {
     '^@bazaarbasket/shared$': '<rootDir>/shared',
     '^@bazaarbasket/shared/(.*)$': '<rootDir>/shared/$1',
   },
-  setupFilesAfterSetup: ['<rootDir>/jest.setup.ts'],
   collectCoverageFrom: [
     '**/*.{ts,tsx}',
     '!**/*.test.{ts,tsx}',

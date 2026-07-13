@@ -148,28 +148,7 @@ export default function SlotPickerScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFFFFF' },
-  headerBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    paddingHorizontal: 20,
-    paddingTop: 56,
-    paddingBottom: 16,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: '#F1F5F9',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   content: { padding: 20, paddingBottom: 120 },
-  title: { fontSize: 20, fontWeight: '700', color: '#000000' },
-  subtitle: { fontSize: 13, color: '#94A3B8', marginTop: 2 },
   sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14, marginTop: 8 },
   sectionAccent: { width: 4, height: 18, borderRadius: 2, backgroundColor: '#4CAF50' },
   sectionTitle: { fontSize: 16, fontWeight: '700', color: '#000000' },

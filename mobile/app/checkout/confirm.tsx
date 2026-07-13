@@ -1,7 +1,7 @@
 // packages/mobile/app/checkout/confirm.tsx
 // Order confirmation screen with COD — Premium Light Theme
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -48,20 +48,22 @@ export default function ConfirmOrderScreen() {
   const deliveryFee = isPickup ? 0 : (totalAmount >= freeDeliveryThreshold ? 0 : standardDeliveryFee);
   const grandTotal = totalAmount + deliveryFee;
 
-  const selectedAddress = isPickup
-    ? {
-        id: 'pickup',
-        label: 'Store Pickup',
-        fullName: userProfile?.displayName || 'Customer',
-        phone: userProfile?.phone || '',
-        addressLine1: settings?.storeAddress || 'Store Outlet',
-        addressLine2: 'Please pick up your order directly from the store location.',
-        city: settings?.storeName || 'BazaarBasket Store',
-        state: '',
-        pincode: '',
-        landmark: '',
-      }
-    : userProfile?.addresses.find((a) => a.id === params.addressId);
+  const selectedAddress = useMemo(() => {
+    return isPickup
+      ? {
+          id: 'pickup',
+          label: 'Store Pickup',
+          fullName: userProfile?.displayName || 'Customer',
+          phone: userProfile?.phone || '',
+          addressLine1: settings?.storeAddress || 'Store Outlet',
+          addressLine2: 'Please pick up your order directly from the store location.',
+          city: settings?.storeName || 'BazaarBasket Store',
+          state: '',
+          pincode: '',
+          landmark: '',
+        }
+      : userProfile?.addresses.find((a) => a.id === params.addressId);
+  }, [isPickup, userProfile, settings, params.addressId]);
 
   const handlePlaceOrder = useCallback(async () => {
     if (!selectedAddress) {
@@ -247,28 +249,7 @@ export default function ConfirmOrderScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFFFFF' },
-  headerBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    paddingHorizontal: 20,
-    paddingTop: 56,
-    paddingBottom: 16,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-  },
-  backBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: '#F1F5F9',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   content: { padding: 20, paddingBottom: 120 },
-  title: { fontSize: 20, fontWeight: '700', color: '#000000' },
-  subtitle: { fontSize: 13, color: '#94A3B8', marginTop: 2 },
   section: { marginBottom: 20 },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 10 },
   sectionIconBg: {
